@@ -7,7 +7,18 @@ const chartConfig = {
         chart4: '#00a2e8',
         chart5: '#5bc0de',
         chart6: '#3a94ff',
-        slot2: '#FFD700'  // Amarelo para Slot 2
+        // Cores para múltiplos slots
+        slotColors: [
+            '#4b8cf2', // Azul - Slot_1_Em Curso
+            '#FFD700', // Amarelo - Slot_2_Em Curso
+            '#FF8C00', // Laranja
+            '#FF69B4', // Rosa
+            '#00CED1', // Turquesa
+            '#9370DB', // Roxo médio
+            '#32CD32', // Verde lima
+            '#FF6347', // Tomate
+            '#4169E1'  // Azul royal
+        ]
     },
     spreadsheetId: '1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y',
     sheetName: 'PSMulti',
@@ -39,18 +50,18 @@ const fetchAllSlotsData = async () => {
         const rows = json.table.rows;
         const slotRows = [];
         
-        // Procura por linhas com "Slot_1_Em Curso" ou "Slot_2_Em Curso" na coluna de STATUS (AI - índice 34)
+        // Procura por linhas com "Slot_1_Em Curso" ou "Slot_2_Em Curso" na coluna A (Chave de Procura - índice 0)
         rows.forEach((row, index) => {
-            const statusCell = row.c[34]; // Coluna AI (STATUS - índice 34)
-            const statusValue = statusCell ? statusCell.v : null;
-            const loteCell = row.c[36]; // Coluna AK (Lote1 - índice 36)
+            const chaveCell = row.c[0]; // Coluna A (Chave de Procura - índice 0)
+            const chaveValue = chaveCell ? chaveCell.v : null;
+            const loteCell = row.c[1]; // Coluna B (LOTE - índice 1)
             const loteValue = loteCell ? loteCell.v : null;
             
-            if (statusValue && typeof statusValue === 'string') {
-                if (statusValue.includes('Slot_1_Em Curso')) {
-                    slotRows.push({ slotNumber: 1, rowIndex: index + 2, loteId: loteValue });
-                } else if (statusValue.includes('Slot_2_Em Curso')) {
-                    slotRows.push({ slotNumber: 2, rowIndex: index + 2, loteId: loteValue });
+            if (chaveValue && typeof chaveValue === 'string') {
+                if (chaveValue.includes('Slot_1_Em Curso')) {
+                    slotRows.push({ slotNumber: 1, rowIndex: index + 2, loteId: loteValue, chave: chaveValue });
+                } else if (chaveValue.includes('Slot_2_Em Curso')) {
+                    slotRows.push({ slotNumber: 2, rowIndex: index + 2, loteId: loteValue, chave: chaveValue });
                 }
             }
         });
@@ -331,7 +342,8 @@ const drawMultipleDonutCharts = (containerId, chartsData) => {
             .style('display', 'flex')
             .style('flex-direction', 'column')
             .style('align-items', 'center')
-            .style('justify-content', 'center');
+            .style('justify-content', 'center')
+            .style('gap', '2px');
 
         const uniqueId = `chart-${Math.random().toString(36).substr(2, 9)}`;
         const fillColor = chartInfo.color;
@@ -440,21 +452,22 @@ const updateAllCharts = async () => {
         if (slots.length === 0) {
             // Se não existem slots, mostrar um gráfico default (usando a primeira linha como fallback)
             const percentage = await fetchPercentage(chart.column, 2);
-            drawDonutChart(chart.id, percentage, chart.color);
-        } else if (slots.length === 1) {
-            // Se existe apenas 1 slot, desenhar um gráfico
-            const percentage = await fetchPercentage(chart.column, slots[0].rowIndex);
-            drawDonutChart(chart.id, percentage, chart.color);
+            // Usa a primeira cor do array slotColors (amarelo)
+            drawDonutChart(chart.id, percentage, chartConfig.colors.slotColors[0]);
         } else {
-            // Se existem múltiplos slots, desenhar múltiplos gráficos
+            // Para qualquer número de slots (1 ou mais), desenhar múltiplos gráficos
             const chartsData = [];
-            for (const slot of slots) {
+            for (let i = 0; i < slots.length; i++) {
+                const slot = slots[i];
                 const percentage = await fetchPercentage(chart.column, slot.rowIndex);
-                const color = slot.slotNumber === 1 ? chart.color : chartConfig.colors.slot2;
+                // Usa slotNumber-1 como índice (Slot_1 = índice 0 = amarelo, Slot_2 = índice 1 = laranja)
+                const colorIndex = (slot.slotNumber - 1) % chartConfig.colors.slotColors.length;
+                const color = chartConfig.colors.slotColors[colorIndex];
                 chartsData.push({
                     percentage: percentage,
                     color: color,
-                    loteId: slot.loteId
+                    loteId: slot.loteId,
+                    chave: slot.chave
                 });
             }
             drawMultipleDonutCharts(chart.id, chartsData);
@@ -475,64 +488,89 @@ const initCharts = () => {
 
 /**
  * Updates EVO progress bar (Column L: GERAL from PSMulti sheet for active slots)
+ * Creates dynamic progress bars based on number of active slots
  */
 const updateEvoProgress = async () => {
     try {
-        // Fetch all slots (Slot_1_Em Curso, Slot_2_Em Curso)
+        // Fetch all slots (Slot_1_Em Curso, Slot_2_Em Curso, etc.)
         const slots = await fetchAllSlotsData();
         
-        const progressBar1 = document.getElementById('evo-progress');
-        const progressBar2Wrapper = document.getElementById('evo-progress-slot2-wrapper');
-        const progressBar2 = document.getElementById('evo-progress-slot2');
+        const progressContainer = document.querySelector('.progress-bar-container');
+        
+        if (!progressContainer) {
+            console.error('Progress bar container not found');
+            return;
+        }
         
         if (slots.length === 0) {
-            // No active slots, hide both progress bars
-            if (progressBar1) progressBar1.style.width = '0%';
-            if (progressBar2Wrapper) progressBar2Wrapper.style.display = 'none';
+            // No active slots, hide container
+            progressContainer.style.display = 'none';
             console.log('⚠️ No active slots found');
             return;
         }
         
-        // Update Slot 1 (always show first slot)
-        const slot1 = slots[0];
-        const SHEET_URL_1 = `https://docs.google.com/spreadsheets/d/${chartConfig.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${chartConfig.sheetName}&range=L${slot1.rowIndex}`;
+        // Show container
+        progressContainer.style.display = 'block';
         
-        const response1 = await d3.text(SHEET_URL_1);
-        let rawValue1 = response1.split('\n')[0]?.trim().replace(/"/g, '');
+        // Clear existing progress bars
+        progressContainer.innerHTML = '';
         
-        if (rawValue1) {
-            rawValue1 = rawValue1.replace('%', '').replace(',', '.').trim();
-            const percentage1 = parseFloat(rawValue1);
+        // Create progress bar for each slot
+        for (let i = 0; i < slots.length; i++) {
+            const slot = slots[i];
+            const SHEET_URL = `https://docs.google.com/spreadsheets/d/${chartConfig.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${chartConfig.sheetName}&range=L${slot.rowIndex}`;
             
-            if (!isNaN(percentage1) && progressBar1) {
-                const clampedPercentage1 = Math.min(100, Math.max(0, percentage1));
-                progressBar1.style.width = `${clampedPercentage1}%`;
-                console.log(`✅ Progress bar Slot 1 updated: ${clampedPercentage1}% (Lote: ${slot1.loteId})`);
-            }
-        }
-        
-        // Check if Slot 2 exists
-        if (slots.length >= 2) {
-            const slot2 = slots[1];
-            const SHEET_URL_2 = `https://docs.google.com/spreadsheets/d/${chartConfig.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${chartConfig.sheetName}&range=L${slot2.rowIndex}`;
-            
-            const response2 = await d3.text(SHEET_URL_2);
-            let rawValue2 = response2.split('\n')[0]?.trim().replace(/"/g, '');
-            
-            if (rawValue2) {
-                rawValue2 = rawValue2.replace('%', '').replace(',', '.').trim();
-                const percentage2 = parseFloat(rawValue2);
+            try {
+                const response = await d3.text(SHEET_URL);
+                let rawValue = response.split('\n')[0]?.trim().replace(/"/g, '');
                 
-                if (!isNaN(percentage2) && progressBar2 && progressBar2Wrapper) {
-                    const clampedPercentage2 = Math.min(100, Math.max(0, percentage2));
-                    progressBar2.style.width = `${clampedPercentage2}%`;
-                    progressBar2Wrapper.style.display = 'block';
-                    console.log(`✅ Progress bar Slot 2 updated: ${clampedPercentage2}% (Lote: ${slot2.loteId})`);
+                if (rawValue) {
+                    rawValue = rawValue.replace('%', '').replace(',', '.').trim();
+                    const percentage = parseFloat(rawValue);
+                    
+                    if (!isNaN(percentage)) {
+                        const clampedPercentage = Math.min(100, Math.max(0, percentage));
+                        
+                        // Usa slotNumber-1 como índice (Slot_1 = índice 0 = amarelo, Slot_2 = índice 1 = laranja)
+                        const colorIndex = (slot.slotNumber - 1) % chartConfig.colors.slotColors.length;
+                        const color = chartConfig.colors.slotColors[colorIndex];
+                        
+                        // Cria wrapper para esta progress bar
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'progress-bar-wrapper';
+                        wrapper.style.marginBottom = i < slots.length - 1 ? '8px' : '0';
+                        
+                        // Cria barra de progresso
+                        const fillDiv = document.createElement('div');
+                        fillDiv.className = 'progress-bar-fill';
+                        fillDiv.style.width = `${clampedPercentage}%`;
+                        fillDiv.style.background = `linear-gradient(90deg, ${color} 0%, ${d3.rgb(color).darker(0.5)} 50%, ${d3.rgb(color).darker(1)} 100%)`;
+                        
+                        // Adiciona label com percentagem
+                        const label = document.createElement('div');
+                        label.style.position = 'absolute';
+                        label.style.left = '50%';
+                        label.style.top = '50%';
+                        label.style.transform = 'translate(-50%, -50%)';
+                        label.style.color = 'white';
+                        label.style.fontSize = '12px';
+                        label.style.fontWeight = 'bold';
+                        label.style.textShadow = '0 0 3px rgba(0,0,0,0.8)';
+                        label.style.zIndex = '10';
+                        label.style.whiteSpace = 'nowrap';
+                        label.textContent = `${clampedPercentage.toFixed(0)}%`;
+                        
+                        wrapper.style.position = 'relative';
+                        wrapper.appendChild(fillDiv);
+                        wrapper.appendChild(label);
+                        progressContainer.appendChild(wrapper);
+                        
+                        console.log(`✅ Progress bar ${i + 1} updated: ${clampedPercentage}% (Chave: ${slot.chave}, Lote: ${slot.loteId})`);
+                    }
                 }
+            } catch (error) {
+                console.error(`Error fetching progress for slot ${i + 1}:`, error);
             }
-        } else {
-            // Hide Slot 2 progress bar if it doesn't exist
-            if (progressBar2Wrapper) progressBar2Wrapper.style.display = 'none';
         }
         
     } catch (error) {
@@ -812,7 +850,7 @@ const updateInfoPanel = async () => {
     }
     
     // Update status indicator based on STATUS column from PSMulti
-    const status = (await fetchStatusData()).toUpperCase();
+    const status = (await fetchStatus()).toUpperCase();
     const statusIndicator = document.getElementById('status-indicator');
     if (statusIndicator) {
         if (status === 'ON') {
