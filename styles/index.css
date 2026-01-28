@@ -11,8 +11,7 @@ body, html {
 }
 
 canvas {
-    display: block; /* Remove espaços brancos extra */
-    vertical-align: top;
+    display: block;
 }
 
 /* --- UI COMPONENTS --- */
@@ -34,27 +33,62 @@ canvas {
 /* DESTINATION CARD */
 .destination-card {
     position: fixed;
-    top: 15vh; /* Posição relativa vertical */
+    top: 15vh;
     left: 4vw;
     background-color: rgba(243, 241, 241, 0.1);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(238, 232, 232, 0.25);
     border-radius: 16px;
-    padding: 1.5vh 2vw; /* Padding responsivo */
+    padding: 1.5vh 2vw;
     z-index: 1000;
     box-shadow: 0 0 10px rgba(5, 187, 237, 0.4), 0 0 20px rgba(5, 187, 237, 0.2);
     animation: glow-pulse 3s ease-in-out infinite;
-    max-width: 300px; /* Limite de largura */
+    width: fit-content;
+    max-width: calc(100vw - 8vw);
 }
 
 .destination-title {
-    /* O texto escala suavemente entre 18px e 28px */
     font-size: clamp(18px, 2.5vw, 28px);
     font-weight: bold;
     color: white;
     text-align: center;
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.country-tag {
+    display: inline-block;
+    padding: 8px 16px;
+    background: rgba(5, 187, 237, 0.2);
+    border: 2px solid rgba(5, 187, 237, 0.6);
+    border-radius: 20px;
+    font-size: clamp(14px, 2vw, 20px);
+    color: white;
+    box-shadow: 0 0 8px rgba(5, 187, 237, 0.3);
+    transition: all 0.3s ease;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.country-tag.slot2 {
+    background: rgba(255, 215, 0, 0.2);
+    border: 2px solid rgba(255, 215, 0, 0.6);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+}
+
+.country-tag:hover {
+    background: rgba(5, 187, 237, 0.4);
+    box-shadow: 0 0 15px rgba(5, 187, 237, 0.6);
+    transform: scale(1.05);
+}
+
+.country-tag.slot2:hover {
+    background: rgba(255, 215, 0, 0.4);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
 }
 
 /* GRID CONTAINER DA DIREITA */
@@ -63,11 +97,7 @@ canvas {
     top: 15vh;
     bottom: 5vh;
     right: 4vw;
-    /* Controla a largura para não ficar enorme na TV */
-    width: clamp(300px, 25vw, 450px);
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: 1fr 1fr auto;
     gap: 1.5vh;
     z-index: 1000;
 }
@@ -81,7 +111,7 @@ canvas {
     border-radius: 16px;
     display: flex;
     flex-direction: column;
-    align-items: left;
+    align-items: center;
     justify-content: flex-start;
     color: white;
     font-size: 14px;
@@ -89,6 +119,7 @@ canvas {
     box-sizing: border-box;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
     overflow: hidden;
+    min-height: 0;
 }
 
 .card-title {
@@ -99,10 +130,8 @@ canvas {
     width: 100%;
 }
 
-/* O GRANDE NÚMERO (Problema principal resolvido aqui) */
+/* O GRANDE NÚMERO */
 .info-panel-content-1 .info-line {
-    /* Reduzi drasticamente o tamanho máximo e usei clamp */
-    /* Mínimo 40px, Ideal 10% da largura do container, Máximo 90px */
     font-size: clamp(40px, 10vw, 90px); 
     font-weight: bold;
     color: white;
@@ -112,7 +141,12 @@ canvas {
 
 .info-line {
     color: white;
-    font-size: clamp(12px, 1.2vw, 16px); /* Ajuste para textos menores */
+    font-size: clamp(11px, 1vw, 16px);
+    line-height: 1.1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
 }
 
 /* BOTTOM SECTION (Imagens e Status) */

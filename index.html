@@ -14,7 +14,7 @@
     body, html {
       margin: 0;
       padding: 0;
-      overflow: hidden !important;
+      overflow: hidden;
       -ms-overflow-style: none;
       scrollbar-width: none;
       width: 100vw;
@@ -27,130 +27,11 @@
       display: none;
     }
 
-    canvas {
-      display: block;
-      vertical-align: top;
-    }
-
-    /* --- LOGOS --- */
-    .top-left-logo, .top-right-logo {
-      position: fixed;
-      top: 2vh; 
-      width: clamp(80px, 10vw, 150px);
-      height: auto;
-      z-index: 1000;
-      background: transparent;
-      cursor: pointer;
-    }
-
-    .top-left-logo { left: 2vw; }
-    .top-right-logo { right: 2vw; }
-
-    /* --- DESTINATION CARD --- */
-    .destination-card {
-      position: fixed;
-      top: 15vh;
-      left: 4vw;
-      background-color: rgba(243, 241, 241, 0.1);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(238, 232, 232, 0.25);
-      border-radius: 16px;
-      padding: 1.5vh 2vw;
-      z-index: 1000;
-      box-shadow: 0 0 10px rgba(5, 187, 237, 0.4), 0 0 20px rgba(5, 187, 237, 0.2);
-      animation: glow-pulse 3s ease-in-out infinite;
-      max-width: 300px;
-    }
-
-    .destination-title {
-      font-size: clamp(18px, 2.5vw, 28px);
-      font-weight: bold;
-      color: white;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .country-tag {
-      display: inline-block;
-      padding: 8px 16px;
-      background: rgba(5, 187, 237, 0.2);
-      border: 2px solid rgba(5, 187, 237, 0.6);
-      border-radius: 20px;
-      font-size: clamp(14px, 2vw, 20px);
-      color: white;
-      box-shadow: 0 0 8px rgba(5, 187, 237, 0.3);
-      transition: all 0.3s ease;
-      width: auto;
-      min-width: fit-content;
-      text-align: center;
-      white-space: nowrap;
-    }
-
-    .country-tag.slot2 {
-      background: rgba(255, 215, 0, 0.2);
-      border: 2px solid rgba(255, 215, 0, 0.6);
-      box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
-    }
-
-    .country-tag:hover {
-      background: rgba(5, 187, 237, 0.4);
-      box-shadow: 0 0 15px rgba(5, 187, 237, 0.6);
-      transform: scale(1.05);
-    }
-
-    .country-tag.slot2:hover {
-      background: rgba(255, 215, 0, 0.4);
-      box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
-    }
-
-    @keyframes glow-pulse {
-      0%, 100% { box-shadow: 0 0 10px rgba(5, 187, 237, 0.4); }
-      50% { box-shadow: 0 0 20px rgba(5, 187, 237, 0.6); }
-    }
-
-    /* --- GRID CONTAINER --- */
+    /* --- GRID ESPECÍFICO --- */
     .grid-container {
-      position: fixed;
-      top: 8vh; 
-      bottom: 5vh;
-      right: 4vw;
       width: clamp(600px, 50vw, 1000px);
-      display: grid;
       grid-template-columns: repeat(2, 1fr);
       grid-template-rows: 1fr 1fr auto auto;
-      gap: 1.5vh;
-      z-index: 1000;
-    }
-
-    .grid-item {
-      background-color: rgba(243, 241, 241, 0.09);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(238, 232, 232, 0.25);
-      border-radius: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      color: white;
-      font-size: 14px;
-      padding: 1vh;
-      box-sizing: border-box;
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-      overflow: hidden;
-      min-height: 0;
-    }
-
-    .card-title {
-      font-size: clamp(12px, 1.2vw, 16px);
-      font-weight: bold;
-      margin-bottom: 5px;
-      text-align: center;
-      width: 100%;
     }
 
     .card-chart {
@@ -161,7 +42,6 @@
       justify-content: center;
     }
 
-    /* --- INFO PANELS --- */
     .info-panel-content-1 {
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -276,16 +156,6 @@
     
     .info-panel-card-3 .card-title {
         font-size: clamp(17px, 1.7vw, 21px) !important;
-    }
-    
-    .info-line {
-        color: white;
-        font-size: clamp(11px, 1vw, 16px);
-        line-height: 1.1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        max-width: 100%;
     }
 
     /* --- BOTTOM SECTION --- */
