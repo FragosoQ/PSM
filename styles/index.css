@@ -1,0 +1,249 @@
+@import url('https://fonts.googleapis.com/css?family=Open+Sans&display=swap');
+
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: 'Open Sans', sans-serif;
+    background: radial-gradient(circle, #020d3a, #000000);
+    overflow: hidden; /* Remove scrollbars */
+    width: 100vw;
+    height: 100vh;
+}
+
+canvas {
+    display: block; /* Remove espaços brancos extra */
+    vertical-align: top;
+}
+
+/* --- UI COMPONENTS --- */
+
+/* LOGOS: Usam clamp para nunca ficarem maiores que 150px, nem menores que 80px */
+.top-left-logo, .top-right-logo {
+    position: fixed;
+    top: 2vh; /* Margem relativa à altura do ecrã */
+    width: clamp(80px, 10vw, 150px); 
+    height: auto;
+    z-index: 1000;
+    background: transparent;
+    cursor: pointer;
+}
+
+.top-left-logo { left: 2vw; }
+.top-right-logo { right: 2vw; }
+
+/* DESTINATION CARD */
+.destination-card {
+    position: fixed;
+    top: 15vh; /* Posição relativa vertical */
+    left: 4vw;
+    background-color: rgba(243, 241, 241, 0.1);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(238, 232, 232, 0.25);
+    border-radius: 16px;
+    padding: 1.5vh 2vw; /* Padding responsivo */
+    z-index: 1000;
+    box-shadow: 0 0 10px rgba(5, 187, 237, 0.4), 0 0 20px rgba(5, 187, 237, 0.2);
+    animation: glow-pulse 3s ease-in-out infinite;
+    max-width: 300px; /* Limite de largura */
+}
+
+.destination-title {
+    /* O texto escala suavemente entre 18px e 28px */
+    font-size: clamp(18px, 2.5vw, 28px);
+    font-weight: bold;
+    color: white;
+    text-align: center;
+    margin: 0;
+}
+
+/* GRID CONTAINER DA DIREITA */
+.grid-container {
+    position: fixed;
+    top: 15vh;
+    bottom: 5vh;
+    right: 4vw;
+    /* Controla a largura para não ficar enorme na TV */
+    width: clamp(300px, 25vw, 450px);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: 1fr 1fr auto;
+    gap: 1.5vh;
+    z-index: 1000;
+}
+
+/* CARDS GERAIS */
+.grid-item {
+    background-color: rgba(243, 241, 241, 0.09);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(238, 232, 232, 0.25);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: left;
+    justify-content: flex-start;
+    color: white;
+    font-size: 14px;
+    padding: 1vh;
+    box-sizing: border-box;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.card-title {
+    font-size: clamp(12px, 1.2vw, 16px);
+    font-weight: bold;
+    margin-bottom: 5px;
+    text-align: center;
+    width: 100%;
+}
+
+/* O GRANDE NÚMERO (Problema principal resolvido aqui) */
+.info-panel-content-1 .info-line {
+    /* Reduzi drasticamente o tamanho máximo e usei clamp */
+    /* Mínimo 40px, Ideal 10% da largura do container, Máximo 90px */
+    font-size: clamp(40px, 10vw, 90px); 
+    font-weight: bold;
+    color: white;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.info-line {
+    color: white;
+    font-size: clamp(12px, 1.2vw, 16px); /* Ajuste para textos menores */
+}
+
+/* BOTTOM SECTION (Imagens e Status) */
+.bottom-section {
+    grid-column: 1 / 4;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    min-height: 0;
+    height: 15vh; /* Altura fixa relativa ao ecrã */
+    max-height: 150px;
+}
+
+.info-panel-image-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.info-panel-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    padding: 5px;
+}
+
+/* STATUS INDICATOR */
+.status-indicator {
+    position: absolute;
+    right: 6px;;
+    top: 42%;
+    transform: translateY(-50%);
+    height: 40%;
+    width: 8px;
+    border-radius: 4px;
+    z-index: -5;
+}
+.status-indicator.status-on { background-color: #00ff00; box-shadow: 0 0 10px #00ff00; }
+.status-indicator.status-off { background-color: #ff0000; box-shadow: 0 0 10px #ff0000; }
+
+/* PROGRESS BAR */
+.progress-bar-container {
+    position: fixed;
+    bottom: 5vh;
+    left: 4vw;
+    width: clamp(200px, 40vw, 600px); /* Largura fluida */
+    z-index: 1000;
+}
+
+.progress-bar-wrapper {
+    width: 100%;
+    height: 12px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #80a5dc 0%, #4b8cf2 50%, #007bff 100%);
+    width: 0%;
+    transition: width 0.5s ease;
+}
+
+/* UTILS: dat.GUI Hides */
+.dg.a { margin-top: 10px; }
+.dg .close-button, .dg .close, .dg .title { display: none !important; }
+
+/* ANIMAÇÕES */
+@keyframes glow-pulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(5, 187, 237, 0.4); }
+    50% { box-shadow: 0 0 20px rgba(5, 187, 237, 0.6); }
+}
+
+/* --- MEDIA QUERIES OTIMIZADAS --- */
+
+/* REMOVI A REGRA DE min-width: 1600px QUE AUMENTAVA TUDO.
+   Na TV, queremos que mantenha o tamanho "normal" ou use os clamps definidos acima.
+*/
+
+/* Tablet (Portrait) */
+@media (max-width: 1024px) {
+    .grid-container {
+        width: 35vw;
+        top: 12vh;
+        gap: 10px;
+    }
+    .info-panel-content-1 .info-line {
+        font-size: clamp(30px, 8vw, 60px);
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    /* Logos menores */
+    .top-left-logo, .top-right-logo { width: 60px; top: 10px; }
+    
+    /* Destination centralizado */
+    .destination-card {
+        top: 80px; 
+        left: 50%; 
+        transform: translateX(-50%);
+        width: 90%; 
+        max-width: none;
+        text-align: center;
+        padding: 10px;
+    }
+
+    /* Grid passa para baixo */
+    .grid-container {
+        top: auto; 
+        bottom: 20px; 
+        right: 10px; 
+        left: 10px;
+        width: auto;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: auto;
+        gap: 8px;
+    }
+    
+    .bottom-section { height: auto; }
+    
+    .progress-bar-container {
+        width: 90%;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 180px; /* Acima do grid no mobile */
+    }
+
+
+}

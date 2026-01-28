@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug - Conexões</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+    }
+    h1 { color: #4CAF50; }
+    .info { background: #2d2d2d; padding: 15px; margin: 10px 0; border-radius: 4px; }
+    .success { color: #4CAF50; }
+    .warning { color: #ff9800; }
+    .error { color: #f44336; }
+    pre { background: #1e1e1e; padding: 10px; overflow-x: auto; }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 Debug - Conexões do Google Sheets</h1>
+  
+  <button onclick="testConnections()">▶️ Testar Conexões</button>
+  <button onclick="location.reload()">🔄 Recarregar</button>
+  
+  <div id="output"></div>
+  
+  <script src="assets/data/googleSheets.js"></script>
+  <script>
+    const output = document.getElementById('output');
+    
+    function log(msg, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `info ${type}`;
+      div.innerHTML = msg;
+      output.appendChild(div);
+    }
+    
+    async function testConnections() {
+      output.innerHTML = '';
+      
+      try {
+        log('📊 Carregando dados do Google Sheets...', 'warning');
+        
+        const rawData = await loadGoogleSheetData();
+        log(`✅ ${rawData.length} linhas carregadas`, 'success');
+        
+        log('<h2>📋 Primeira linha (exemplo):</h2><pre>' + JSON.stringify(rawData[0], null, 2) + '</pre>');
+        
+        // Mostra as primeiras 10 linhas com dados de países
+        log('<h2>🔍 Primeiras Linhas com Países:</h2>');
+        const sampleRow = rawData[0] || {};
+        const columnNames = Object.keys(sampleRow);
+        
+        const country1Col = columnNames.find(col => /^país\s*1$/i.test(col.trim()));
+        const country2Col = columnNames.find(col => /^país\s*2$/i.test(col.trim()));
+        const country3Col = columnNames.find(col => /^país\s*3$/i.test(col.trim()));
+        
+        log(`<strong>Colunas identificadas:</strong> País 1="${country1Col}", País 2="${country2Col}", País 3="${country3Col}"`);
+        
+        let lineCount = 0;
+        rawData.forEach((row, i) => {
+          const c1 = row[country1Col];
+          const c2 = row[country2Col];
+          const c3 = row[country3Col];
+          
+          if (c1 || c2 || c3) {
+            lineCount++;
+            if (lineCount <= 10) {
+              let line = `Linha ${lineCount}: `;
+              if (c1) line += `País 1="${c1}" `;
+              if (c2) line += `País 2="${c2}" `;
+              if (c3) line += `País 3="${c3}"`;
+              log(line, 'info');
+            }
+          }
+        });
+        log(`<strong>Total de linhas com países:</strong> ${lineCount}`);
+        
+        const { countries, connections } = await convertSheetDataToAppFormat(rawData);
+        
+        log(`<h2>✅ Dados Convertidos</h2>`, 'success');
+        log(`<strong>Países:</strong> ${countries.length}`);
+        log(`<strong>Lista:</strong> ${countries.map(c => c.name).join(', ')}`);
+        
+        log('<h2>🔗 Conexões de Portugal:</h2>');
+        if (connections['Portugal']) {
+          log(`<strong>Total de conexões:</strong> ${connections['Portugal'].length}`);
+          log(`<strong>Array completo:</strong><pre>${JSON.stringify(connections['Portugal'], null, 2)}</pre>`);
+          
+          // Conta frequência
+          const freq = {};
+          connections['Portugal'].forEach(c => {
+            freq[c] = (freq[c] || 0) + 1;
+          });
+          
+          log(`<h3>📈 Frequência por País:</h3><pre>${JSON.stringify(freq, null, 2)}</pre>`);
+          
+          // Mostra como serão as linhas
+          log('<h3>🎨 Linhas que serão desenhadas:</h3>');
+          connections['Portugal'].forEach((dest, i) => {
+            log(`${i + 1}. Portugal → ${dest}`, 'success');
+          });
+          
+        } else {
+          log('❌ Nenhuma conexão encontrada para Portugal', 'error');
+        }
+        
+      } catch (error) {
+        log(`❌ Erro: ${error.message}`, 'error');
+        log(`<pre>${error.stack}</pre>`, 'error');
+      }
+    }
+    
+    // Auto-executa ao carregar
+    window.onload = () => {
+      log('Página carregada. Clique em "Testar Conexões" para começar.', 'warning');
+    };
+  </script>
+</body>
+</html>

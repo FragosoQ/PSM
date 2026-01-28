@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Validação Google Sheets</title>
+  <style>
+    body {
+      font-family: monospace;
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+    }
+    
+    h1 {
+      color: #4CAF50;
+    }
+    
+    .step {
+      background: #2d2d2d;
+      padding: 15px;
+      margin: 10px 0;
+      border-left: 4px solid #888;
+      border-radius: 4px;
+    }
+    
+    .step.success {
+      border-left-color: #4CAF50;
+    }
+    
+    .step.error {
+      border-left-color: #f44336;
+    }
+    
+    .step.warning {
+      border-left-color: #ff9800;
+    }
+    
+    .step.info {
+      border-left-color: #2196F3;
+    }
+    
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 10px 0;
+    }
+    
+    button:hover {
+      background: #45a049;
+    }
+    
+    code {
+      background: #1e1e1e;
+      padding: 2px 6px;
+      border-radius: 3px;
+      color: #ce9178;
+    }
+    
+    pre {
+      background: #1e1e1e;
+      padding: 10px;
+      overflow-x: auto;
+      border-radius: 4px;
+    }
+    
+    .icon {
+      font-size: 20px;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 Validação da Integração Google Sheets</h1>
+  
+  <button onclick="runValidation()">▶️ Executar Validação</button>
+  
+  <div id="results"></div>
+  
+  <script>
+    const SHEET_ID = '1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y';
+    const SHEET_NAME = 'PS1';
+    const results = document.getElementById('results');
+    
+    function addStep(message, type = 'info', details = null) {
+      const icons = {
+        success: '✅',
+        error: '❌',
+        warning: '⚠️',
+        info: 'ℹ️'
+      };
+      
+      const step = document.createElement('div');
+      step.className = `step ${type}`;
+      step.innerHTML = `
+        <span class="icon">${icons[type]}</span>
+        <strong>${message}</strong>
+        ${details ? `<pre>${details}</pre>` : ''}
+      `;
+      results.appendChild(step);
+      
+      // Scroll to bottom
+      step.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    
+    async function runValidation() {
+      results.innerHTML = '';
+      
+      addStep('Iniciando validação...', 'info');
+      
+      // 1. Verificar se o script googleSheets.js está carregado
+      try {
+        addStep('Verificando scripts necessários...', 'info');
+        
+        if (typeof loadGoogleSheetData !== 'function') {
+          addStep('Script googleSheets.js não encontrado!', 'error', 
+            'Certifique-se de que assets/data/googleSheets.js existe e está sendo carregado.');
+          return;
+        }
+        
+        addStep('Script googleSheets.js encontrado', 'success');
+      } catch (error) {
+        addStep('Erro ao verificar scripts', 'error', error.toString());
+        return;
+      }
+      
+      // 2. Verificar acessibilidade da planilha
+      try {
+        addStep('Verificando acessibilidade da planilha...', 'info');
+        
+        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}`;
+        addStep('URL de acesso:', 'info', url);
+        
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          addStep(`Erro HTTP ${response.status}: ${response.statusText}`, 'error',
+            'A planilha pode não estar pública ou o ID/nome do separador está incorreto.');
+          return;
+        }
+        
+        addStep('Planilha acessível via HTTP', 'success');
+        
+        const text = await response.text();
+        
+        if (!text.includes('google.visualization.Query.setResponse')) {
+          addStep('Resposta da API não está no formato esperado', 'error', text.substring(0, 200));
+          return;
+        }
+        
+        addStep('Formato de resposta válido', 'success');
+        
+      } catch (error) {
+        addStep('Erro ao acessar planilha', 'error', 
+          error.toString() + '\n\nPossíveis causas:\n' +
+          '- Planilha não está pública\n' +
+          '- Bloqueio de CORS\n' +
+          '- Sem conexão à internet');
+        return;
+      }
+      
+      // 3. Carregar dados brutos
+      let rawData;
+      try {
+        addStep('Carregando dados brutos...', 'info');
+        
+        rawData = await loadGoogleSheetData();
+        
+        if (!rawData || !Array.isArray(rawData)) {
+          addStep('Dados inválidos retornados', 'error', typeof rawData);
+          return;
+        }
+        
+        if (rawData.length === 0) {
+          addStep('Nenhuma linha encontrada na planilha', 'warning', 
+            'Verifique se o separador PS1 contém dados.');
+          return;
+        }
+        
+        addStep(`${rawData.length} linhas carregadas`, 'success');
+        
+        // Mostrar primeira linha como exemplo
+        addStep('Primeira linha:', 'info', JSON.stringify(rawData[0], null, 2));
+        
+      } catch (error) {
+        addStep('Erro ao carregar dados brutos', 'error', error.toString());
+        return;
+      }
+      
+      // 4. Validar estrutura dos dados
+      try {
+        addStep('Validando estrutura dos dados...', 'info');
+        
+        const firstRow = rawData[0];
+        const columns = Object.keys(firstRow);
+        
+        addStep(`Colunas encontradas: ${columns.join(', ')}`, 'info');
+        
+        // Verificar colunas obrigatórias
+        const hasNameCol = columns.some(col => 
+          /^(name|nome|cidade|city|país|country|location)$/i.test(col.trim())
+        );
+        
+        const hasLatCol = columns.some(col => 
+          /^(lat|latitude|latitud)$/i.test(col.trim())
+        );
+        
+        const hasLonCol = columns.some(col => 
+          /^(lon|lng|longitude|longitud)$/i.test(col.trim())
+        );
+        
+        if (!hasNameCol) {
+          addStep('Coluna de NOME não encontrada', 'error', 
+            'Esperado: name, nome, cidade, city, país, country ou location');
+        } else {
+          addStep('Coluna de NOME encontrada', 'success');
+        }
+        
+        if (!hasLatCol) {
+          addStep('Coluna de LATITUDE não encontrada', 'error', 
+            'Esperado: lat, latitude ou latitud');
+        } else {
+          addStep('Coluna de LATITUDE encontrada', 'success');
+        }
+        
+        if (!hasLonCol) {
+          addStep('Coluna de LONGITUDE não encontrada', 'error', 
+            'Esperado: lon, lng, longitude ou longitud');
+        } else {
+          addStep('Coluna de LONGITUDE encontrada', 'success');
+        }
+        
+        if (!hasNameCol || !hasLatCol || !hasLonCol) {
+          addStep('Estrutura inválida - faltam colunas obrigatórias', 'error');
+          return;
+        }
+        
+      } catch (error) {
+        addStep('Erro ao validar estrutura', 'error', error.toString());
+        return;
+      }
+      
+      // 5. Converter dados
+      try {
+        addStep('Convertendo dados para formato da aplicação...', 'info');
+        
+        const { countries, connections } = convertSheetDataToAppFormat(rawData);
+        
+        if (!countries || countries.length === 0) {
+          addStep('Nenhum país foi convertido', 'warning', 
+            'Verifique se os dados têm valores válidos em todas as colunas obrigatórias.');
+          return;
+        }
+        
+        addStep(`${countries.length} países convertidos`, 'success');
+        addStep(`${Object.keys(connections).length} conexões encontradas`, 'info');
+        
+        // Mostrar alguns países como exemplo
+        const sample = countries.slice(0, 3).map(c => 
+          `${c.name} (${c.latitude}, ${c.longitude})`
+        ).join('\n');
+        
+        addStep('Exemplos de países:', 'info', sample);
+        
+      } catch (error) {
+        addStep('Erro ao converter dados', 'error', error.toString());
+        return;
+      }
+      
+      // 6. Conclusão
+      addStep('✨ Validação concluída com sucesso!', 'success', 
+        'A integração está funcionando corretamente.\n' +
+        'Pode abrir index.html para ver o globo com os dados do Google Sheets.');
+    }
+  </script>
+  
+  <script src="assets/data/googleSheets.js"></script>
+</body>
+</html>
