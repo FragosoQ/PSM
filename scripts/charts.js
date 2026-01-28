@@ -54,7 +54,7 @@ const fetchAllSlotsData = async () => {
         rows.forEach((row, index) => {
             const chaveCell = row.c[0]; // Coluna A (Chave de Procura - índice 0)
             const chaveValue = chaveCell ? chaveCell.v : null;
-            const loteCell = row.c[1]; // Coluna B (LOTE - índice 1)
+            const loteCell = row.c[36]; // Coluna AK (Lote1 - índice 36)
             const loteValue = loteCell ? loteCell.v : null;
             
             if (chaveValue && typeof chaveValue === 'string') {
@@ -546,23 +546,8 @@ const updateEvoProgress = async () => {
                         fillDiv.style.width = `${clampedPercentage}%`;
                         fillDiv.style.background = `linear-gradient(90deg, ${color} 0%, ${d3.rgb(color).darker(0.5)} 50%, ${d3.rgb(color).darker(1)} 100%)`;
                         
-                        // Adiciona label com percentagem
-                        const label = document.createElement('div');
-                        label.style.position = 'absolute';
-                        label.style.left = '50%';
-                        label.style.top = '50%';
-                        label.style.transform = 'translate(-50%, -50%)';
-                        label.style.color = 'white';
-                        label.style.fontSize = '12px';
-                        label.style.fontWeight = 'bold';
-                        label.style.textShadow = '0 0 3px rgba(0,0,0,0.8)';
-                        label.style.zIndex = '10';
-                        label.style.whiteSpace = 'nowrap';
-                        label.textContent = `${clampedPercentage.toFixed(0)}%`;
-                        
                         wrapper.style.position = 'relative';
                         wrapper.appendChild(fillDiv);
-                        wrapper.appendChild(label);
                         progressContainer.appendChild(wrapper);
                         
                         console.log(`✅ Progress bar ${i + 1} updated: ${clampedPercentage}% (Chave: ${slot.chave}, Lote: ${slot.loteId})`);
@@ -640,19 +625,42 @@ const fetchBufferData = async () => {
 };
 
 /**
- * Fetches status from Google Sheets PSMulti
+ * Fetches status from Google Sheets PSMulti (Column AI: STATUS)
+ * Verifica todos os slots ativos: se qualquer um for OFF, retorna OFF
+ * Apenas se todos forem ON, retorna ON
  */
 const fetchStatus = async () => {
-    // Read from PSMulti, row 2, column AI (STATUS)
-    const SHEET_URL = `https://docs.google.com/spreadsheets/d/1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y/gviz/tq?tqx=out:csv&sheet=PSMulti&range=A2:AI2`;
-
     try {
-        const response = await d3.text(SHEET_URL);
+        // Fetch all active slots
+        const slots = await fetchAllSlotsData();
         
-        // Parse CSV response
-        const values = response.split('\n')[0]?.split(',').map(v => v.replace(/^"|"$/g, '').trim()) || [];
+        if (slots.length === 0) {
+            return 'OFF';
+        }
         
-        return values[34] || 'OFF';  // Column AI (STATUS) is index 34
+        // Check status (column AI - index 34) for each slot
+        const statusValues = [];
+        
+        for (const slot of slots) {
+            const SHEET_URL = `https://docs.google.com/spreadsheets/d/${chartConfig.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${chartConfig.sheetName}&range=AI${slot.rowIndex}`;
+            
+            try {
+                const response = await d3.text(SHEET_URL);
+                const statusValue = response.split('\n')[0]?.trim().replace(/"/g, '').toUpperCase() || 'OFF';
+                statusValues.push(statusValue);
+            } catch (error) {
+                console.error(`Error fetching status for slot ${slot.slotNumber}:`, error);
+                statusValues.push('OFF'); // Default to OFF on error
+            }
+        }
+        
+        // Se qualquer um for OFF, retorna OFF
+        // Apenas se todos forem ON, retorna ON
+        const hasOff = statusValues.some(status => status === 'OFF');
+        const result = hasOff ? 'OFF' : 'ON';
+        
+        console.log(`📊 Status check - Slots: ${statusValues.join(', ')} → Result: ${result}`);
+        return result;
 
     } catch (error) {
         console.error('Error fetching status from PSMulti:', error);
