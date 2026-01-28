@@ -49,7 +49,32 @@ class Marker {
       return;
     }
 
-    const text = this.createText();
+    // Abreviaturas para países com nomes extensos
+    const countryAbbreviations = {
+      'UNITED STATES': 'USA',
+      'UNITED KINGDOM': 'UK',
+      'SOUTH AFRICA': 'SOUTH AFRICA',
+      'SAUDI ARABIA': 'SAUDI ARABIA',
+      'UNITED ARAB EMIRATES': 'UAE',
+      'DOMINICAN REPUBLIC': 'DOM. REP.',
+      'CZECH REPUBLIC': 'CZECHIA',
+      'CENTRAL AFRICAN REPUBLIC': 'C.A.R.',
+      'BOSNIA AND HERZEGOVINA': 'BOSNIA',
+      'TRINIDAD AND TOBAGO': 'TRINIDAD',
+      'ANTIGUA AND BARBUDA': 'ANTIGUA',
+      'ST. VINCENT AND THE GRENADINES': 'ST. VINCENT',
+      'SAO TOME AND PRINCIPE': 'SAO TOME',
+      'EQUATORIAL GUINEA': 'EQ. GUINEA',
+      'PAPUA NEW GUINEA': 'PAPUA N.G.',
+      'NORTH MACEDONIA': 'MACEDONIA',
+      'MACAO SAR, CHINA': 'MACAU',
+      'HONG KONG SAR, CHINA': 'HONG KONG'
+    };
+    
+    // Use abbreviation if available, otherwise use original name
+    const displayName = countryAbbreviations[countryUpper] || this.labelText;
+
+    const text = this.createText(displayName);
     const texture = new THREE.Texture(text);
     texture.minFilter = THREE.LinearFilter;
     texture.needsUpdate = true;
@@ -113,11 +138,11 @@ class Marker {
     this.group.position.set(-x, y, -z)
   }
 
-  createText() {
+  createText(labelText = this.labelText) {
     const element = document.createElement('canvas');
     const canvas = new fabric.Canvas(element);
 
-    const text = new fabric.Text(this.labelText, {
+    const text = new fabric.Text(labelText, {
       left: 10, 
       top: 5, 
       fill: 'black', 
