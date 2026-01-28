@@ -6,27 +6,68 @@ const chartConfig = {
         chart3: '#007bff',
         chart4: '#00a2e8',
         chart5: '#5bc0de',
-        chart6: '#3a94ff'
+        chart6: '#3a94ff',
+        slot2: '#FFD700'  // Amarelo para Slot 2
     },
     spreadsheetId: '1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y',
-    sheetName: 'PS1',
+    sheetName: 'PSMulti',
     posto: 1, // Posto number (line to read: posto 1 = line 2, posto 2 = line 3, etc.)
     columns: {
-        chart1: 'AC', // CUBA
-        chart2: 'AE', // INTERIOR
+        chart1: 'AA', // CUBA
+        chart2: 'AC', // INTERIOR
         chart3: null, // TESTES - não existe
-        chart4: 'AF', // ENVOLVENTES
-        chart5: 'AD', // ESTRUTURA
+        chart4: 'AD', // ENVOLVENTES
+        chart5: 'AB', // ESTRUTURA
         chart6: null  // ÁREA TÉCNICA - não existe
     }
 };
 
 /**
- * Fetches percentage value from Google Sheets PS1
+ * Fetches all rows from PSMulti sheet to detect slots
  */
-const fetchPercentage = async (columnName) => {
-    const row = chartConfig.posto + 1; // posto 1 = row 2, posto 2 = row 3, etc.
-    const SHEET_URL = `https://docs.google.com/spreadsheets/d/${chartConfig.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${chartConfig.sheetName}&range=${columnName}${row}`;
+const fetchAllSlotsData = async () => {
+    const SHEET_URL = `https://docs.google.com/spreadsheets/d/${chartConfig.spreadsheetId}/gviz/tq?tqx=out:json&sheet=${chartConfig.sheetName}`;
+
+    try {
+        const response = await fetch(SHEET_URL);
+        const text = await response.text();
+        
+        // Remove o prefixo do Google
+        const jsonString = text.substring(47, text.length - 2);
+        const json = JSON.parse(jsonString);
+        
+        const rows = json.table.rows;
+        const slotRows = [];
+        
+        // Procura por linhas com "Slot_1_Em Curso" ou "Slot_2_Em Curso" na coluna de STATUS (AI - índice 34)
+        rows.forEach((row, index) => {
+            const statusCell = row.c[34]; // Coluna AI (STATUS - índice 34)
+            const statusValue = statusCell ? statusCell.v : null;
+            const loteCell = row.c[36]; // Coluna AK (Lote1 - índice 36)
+            const loteValue = loteCell ? loteCell.v : null;
+            
+            if (statusValue && typeof statusValue === 'string') {
+                if (statusValue.includes('Slot_1_Em Curso')) {
+                    slotRows.push({ slotNumber: 1, rowIndex: index + 2, loteId: loteValue });
+                } else if (statusValue.includes('Slot_2_Em Curso')) {
+                    slotRows.push({ slotNumber: 2, rowIndex: index + 2, loteId: loteValue });
+                }
+            }
+        });
+        
+        return slotRows;
+
+    } catch (error) {
+        console.error('Error fetching slots data:', error);
+        return [];
+    }
+};
+
+/**
+ * Fetches percentage value from Google Sheets PSMulti for a specific row and column
+ */
+const fetchPercentage = async (columnName, rowNumber) => {
+    const SHEET_URL = `https://docs.google.com/spreadsheets/d/${chartConfig.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${chartConfig.sheetName}&range=${columnName}${rowNumber}`;
 
     try {
         const response = await d3.text(SHEET_URL);
@@ -64,60 +105,73 @@ const fetchPercentage = async (columnName) => {
 };
 
 /**
- * Fetches destination name from Google Sheets PM1 (Column L - PAÍS)
+ * Fetches countries from Google Sheets PSMulti (Columns W, X, Y - País 1, País 2, País 3)
  */
-const fetchDestination = async () => {
-    const row = chartConfig.posto + 1; // posto 1 = row 2, posto 2 = row 3, etc.
-    const SHEET_URL = `https://docs.google.com/spreadsheets/d/${chartConfig.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${chartConfig.sheetName}&range=L${row}`;
-
+const fetchDestinationCountries = async () => {
     try {
-        const response = await d3.text(SHEET_URL);
-        console.log('PAÍS response:', response);
+        // Fetch all active slots
+        const slots = await fetchAllSlotsData();
         
-        // Split by newlines and get first line (which is L2 data)
-        let destination = response.split('\n')[0]?.trim(); 
-
-        if (!destination) {
-            console.warn('Empty destination data.');
-            return 'Nigeria';
+        if (slots.length === 0) {
+            console.warn('No active slots found for countries.');
+            return [];
         }
-
-        // Remove quotes if present
-        destination = destination.replace(/^"|"$/g, ''); 
         
-        console.log('Fetched destination:', destination);
-        return destination;
-
+        const countriesWithSlot = [];
+        
+        for (const slot of slots) {
+            const SHEET_URL = `https://docs.google.com/spreadsheets/d/${chartConfig.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${chartConfig.sheetName}&range=W${slot.rowIndex}:Y${slot.rowIndex}`;
+            
+            try {
+                const response = await d3.text(SHEET_URL);
+                const values = response.split('\n')[0]?.split(',').map(v => v.replace(/^"|"$/g, '').trim()) || [];
+                
+                // Add non-empty countries with slot info
+                values.forEach(country => {
+                    if (country && country !== '') {
+                        countriesWithSlot.push({
+                            name: country,
+                            slotNumber: slot.slotNumber
+                        });
+                    }
+                });
+            } catch (error) {
+                console.error(`Error fetching countries for Slot ${slot.slotNumber}:`, error);
+            }
+        }
+        
+        console.log('Fetched countries from PSMulti:', countriesWithSlot);
+        return countriesWithSlot;
+        
     } catch (error) {
-        console.error('Error fetching destination:', error);
-        return 'Nigeria'; 
+        console.error('Error fetching destination countries:', error);
+        return [];
     }
 };
 
 /**
- * Updates destination card with unique countries from connections
+ * Updates destination card with countries from PSMulti
  */
-const updateDestination = () => {
+const updateDestination = async () => {
     const destinationTitle = document.getElementById('destination-title');
     
     if (!destinationTitle) return;
     
-    // Get unique countries from Portugal connections
-    if (data.connections && data.connections.Portugal) {
-        const uniqueCountries = [...new Set(data.connections.Portugal)];
-        
-        // Create HTML with tags for each country
-        if (uniqueCountries.length > 0) {
-            destinationTitle.innerHTML = uniqueCountries
-                .map(country => `<span class="country-tag">${country.toUpperCase()}</span>`)
-                .join('');
-        } else {
-            destinationTitle.textContent = 'No destinations';
-        }
-        
-        console.log('Destination card updated with countries:', uniqueCountries);
+    destinationTitle.textContent = 'Loading...';
+    
+    // Get countries from PSMulti columns W, X, Y
+    const countriesWithSlot = await fetchDestinationCountries();
+    
+    if (countriesWithSlot.length > 0) {
+        destinationTitle.innerHTML = countriesWithSlot
+            .map(countryData => {
+                const slotClass = countryData.slotNumber === 2 ? ' slot2' : '';
+                return `<span class="country-tag${slotClass}">${countryData.name.toUpperCase()}</span>`;
+            })
+            .join('');
+        console.log('Destination card updated with countries:', countriesWithSlot);
     } else {
-        destinationTitle.textContent = 'Loading...';
+        destinationTitle.textContent = 'No destinations';
     }
 };
 
@@ -227,6 +281,139 @@ const drawDonutChart = (containerId, percentage, fillColor) => {
 };
 
 /**
+ * Draws multiple donut charts side by side in a container
+ */
+const drawMultipleDonutCharts = (containerId, chartsData) => {
+    const container = d3.select(containerId).select('.card-chart');
+    container.html('');
+
+    const containerNode = container.node();
+    if (!containerNode) return;
+
+    const rect = containerNode.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+
+    // For 2 charts, each gets half the width
+    const chartWidth = (width / chartsData.length) - 10;
+    const chartHeight = height - 20;
+    const size = Math.min(chartWidth, chartHeight);
+    
+    if (size <= 0) {
+        return; 
+    }
+
+    const radius = size / 2;
+    const innerRadius = radius * 0.65;
+
+    const arc = d3.arc()
+        .innerRadius(innerRadius)
+        .outerRadius(radius);
+
+    const pie = d3.pie()
+        .sort(null)
+        .value(d => d.value)
+        .startAngle(-Math.PI * 0.5) 
+        .endAngle(Math.PI * 1.5);
+
+    // Create a container for all charts
+    const mainContainer = container.append('div')
+        .style('display', 'flex')
+        .style('justify-content', 'center')
+        .style('align-items', 'center')
+        .style('gap', '10px')
+        .style('width', '100%')
+        .style('height', '100%');
+
+    // Draw each chart
+    chartsData.forEach((chartInfo, index) => {
+        const chartContainer = mainContainer.append('div')
+            .style('display', 'flex')
+            .style('flex-direction', 'column')
+            .style('align-items', 'center')
+            .style('justify-content', 'center');
+
+        const uniqueId = `chart-${Math.random().toString(36).substr(2, 9)}`;
+        const fillColor = chartInfo.color;
+        const percentage = chartInfo.percentage;
+
+        const data = [
+            { value: percentage, name: 'Filled' },
+            { value: 100 - percentage, name: 'Empty' }
+        ];
+
+        const svg = chartContainer.append('svg')
+            .attr('width', size)
+            .attr('height', size)
+            .attr('viewBox', `0 0 ${size} ${size}`)
+            .style('display', 'block')
+            .append('g')
+            .attr('transform', `translate(${size / 2}, ${size / 2})`);
+
+        // Add gradient definitions
+        const defs = svg.append('defs');
+        
+        const fillGradient = defs.append('radialGradient')
+            .attr('id', `fill-gradient-${uniqueId}`)
+            .attr('cx', '30%')
+            .attr('cy', '30%');
+        
+        fillGradient.append('stop')
+            .attr('offset', '0%')
+            .attr('stop-color', d3.rgb(fillColor).brighter(0.8))
+            .attr('stop-opacity', 1);
+        
+        fillGradient.append('stop')
+            .attr('offset', '100%')
+            .attr('stop-color', fillColor)
+            .attr('stop-opacity', 1);
+        
+        const emptyGradient = defs.append('radialGradient')
+            .attr('id', `empty-gradient-${uniqueId}`)
+            .attr('cx', '30%')
+            .attr('cy', '30%');
+        
+        emptyGradient.append('stop')
+            .attr('offset', '0%')
+            .attr('stop-color', 'rgba(255, 255, 255, 0.3)')
+            .attr('stop-opacity', 1);
+        
+        emptyGradient.append('stop')
+            .attr('offset', '100%')
+            .attr('stop-color', 'rgba(255, 255, 255, 0.08)')
+            .attr('stop-opacity', 1);
+
+        const arcs = svg.selectAll('.arc')
+            .data(pie(data))
+            .enter()
+            .append('g')
+            .attr('class', 'arc');
+
+        arcs.append('path')
+            .attr('d', arc)
+            .attr('fill', (d, i) => i === 0 ? `url(#fill-gradient-${uniqueId})` : `url(#empty-gradient-${uniqueId})`)
+            .attr('stroke', 'none');
+
+        svg.append('text')
+            .attr('text-anchor', 'middle')
+            .attr('dy', '0.35em') 
+            .style('font-size', '1.8rem')
+            .style('font-weight', 'bold')
+            .style('fill', 'white')
+            .text(`${percentage.toFixed(0)}%`);
+
+        // Add lote ID if available
+        if (chartInfo.loteId) {
+            chartContainer.append('div')
+                .style('color', 'white')
+                .style('font-size', '12px')
+                .style('margin-top', '5px')
+                .text(chartInfo.loteId);
+        }
+    });
+};
+
+/**
  * Updates all charts with data from Google Sheets
  */
 const updateAllCharts = async () => {
@@ -239,6 +426,9 @@ const updateAllCharts = async () => {
         { id: '#grid-item-6', column: chartConfig.columns.chart6, color: chartConfig.colors.chart6 }
     ];
 
+    // Fetch all slots (Slot_1_Em Curso, Slot_2_Em Curso)
+    const slots = await fetchAllSlotsData();
+
     for (const chart of charts) {
         // Skip charts with null column (não existem)
         if (chart.column === null) {
@@ -247,8 +437,28 @@ const updateAllCharts = async () => {
             continue;
         }
         
-        const percentage = await fetchPercentage(chart.column);
-        drawDonutChart(chart.id, percentage, chart.color);
+        if (slots.length === 0) {
+            // Se não existem slots, mostrar um gráfico default (usando a primeira linha como fallback)
+            const percentage = await fetchPercentage(chart.column, 2);
+            drawDonutChart(chart.id, percentage, chart.color);
+        } else if (slots.length === 1) {
+            // Se existe apenas 1 slot, desenhar um gráfico
+            const percentage = await fetchPercentage(chart.column, slots[0].rowIndex);
+            drawDonutChart(chart.id, percentage, chart.color);
+        } else {
+            // Se existem múltiplos slots, desenhar múltiplos gráficos
+            const chartsData = [];
+            for (const slot of slots) {
+                const percentage = await fetchPercentage(chart.column, slot.rowIndex);
+                const color = slot.slotNumber === 1 ? chart.color : chartConfig.colors.slot2;
+                chartsData.push({
+                    percentage: percentage,
+                    color: color,
+                    loteId: slot.loteId
+                });
+            }
+            drawMultipleDonutCharts(chart.id, chartsData);
+        }
     }
 };
 
@@ -264,64 +474,109 @@ const initCharts = () => {
 };
 
 /**
- * Updates EVO progress bar (Column AB: GERAL from PS1 sheet)
+ * Updates EVO progress bar (Column L: GERAL from PSMulti sheet for active slots)
  */
 const updateEvoProgress = async () => {
-    // Read from PS1 sheet, row 2 (first data row), column AB (GERAL)
-    const SHEET_URL = `https://docs.google.com/spreadsheets/d/1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y/gviz/tq?tqx=out:csv&sheet=PS1&range=AB2`;
-
     try {
-        const response = await d3.text(SHEET_URL);
+        // Fetch all slots (Slot_1_Em Curso, Slot_2_Em Curso)
+        const slots = await fetchAllSlotsData();
         
-        let rawValue = response.split('\n')[0]?.trim().replace(/"/g, ''); 
-
-        if (!rawValue) {
-            console.warn('Empty data in PS1 column AB (GERAL).');
+        const progressBar1 = document.getElementById('evo-progress');
+        const progressBar2Wrapper = document.getElementById('evo-progress-slot2-wrapper');
+        const progressBar2 = document.getElementById('evo-progress-slot2');
+        
+        if (slots.length === 0) {
+            // No active slots, hide both progress bars
+            if (progressBar1) progressBar1.style.width = '0%';
+            if (progressBar2Wrapper) progressBar2Wrapper.style.display = 'none';
+            console.log('⚠️ No active slots found');
             return;
         }
-
-        // Parse percentage (remove % if present and convert to number)
-        rawValue = rawValue.replace('%', '').replace(',', '.').trim();
-        const percentage = parseFloat(rawValue);
         
-        if (!isNaN(percentage)) {
-            const progressBar = document.getElementById('evo-progress');
+        // Update Slot 1 (always show first slot)
+        const slot1 = slots[0];
+        const SHEET_URL_1 = `https://docs.google.com/spreadsheets/d/${chartConfig.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${chartConfig.sheetName}&range=L${slot1.rowIndex}`;
+        
+        const response1 = await d3.text(SHEET_URL_1);
+        let rawValue1 = response1.split('\n')[0]?.trim().replace(/"/g, '');
+        
+        if (rawValue1) {
+            rawValue1 = rawValue1.replace('%', '').replace(',', '.').trim();
+            const percentage1 = parseFloat(rawValue1);
             
-            if (progressBar) {
-                const clampedPercentage = Math.min(100, Math.max(0, percentage));
-                progressBar.style.width = `${clampedPercentage}%`;
-                console.log(`✅ Progress bar updated: ${clampedPercentage}%`);
+            if (!isNaN(percentage1) && progressBar1) {
+                const clampedPercentage1 = Math.min(100, Math.max(0, percentage1));
+                progressBar1.style.width = `${clampedPercentage1}%`;
+                console.log(`✅ Progress bar Slot 1 updated: ${clampedPercentage1}% (Lote: ${slot1.loteId})`);
+            }
+        }
+        
+        // Check if Slot 2 exists
+        if (slots.length >= 2) {
+            const slot2 = slots[1];
+            const SHEET_URL_2 = `https://docs.google.com/spreadsheets/d/${chartConfig.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${chartConfig.sheetName}&range=L${slot2.rowIndex}`;
+            
+            const response2 = await d3.text(SHEET_URL_2);
+            let rawValue2 = response2.split('\n')[0]?.trim().replace(/"/g, '');
+            
+            if (rawValue2) {
+                rawValue2 = rawValue2.replace('%', '').replace(',', '.').trim();
+                const percentage2 = parseFloat(rawValue2);
+                
+                if (!isNaN(percentage2) && progressBar2 && progressBar2Wrapper) {
+                    const clampedPercentage2 = Math.min(100, Math.max(0, percentage2));
+                    progressBar2.style.width = `${clampedPercentage2}%`;
+                    progressBar2Wrapper.style.display = 'block';
+                    console.log(`✅ Progress bar Slot 2 updated: ${clampedPercentage2}% (Lote: ${slot2.loteId})`);
+                }
             }
         } else {
-            console.warn(`Non-numeric value in PS1 AB (GERAL): "${rawValue}"`);
+            // Hide Slot 2 progress bar if it doesn't exist
+            if (progressBar2Wrapper) progressBar2Wrapper.style.display = 'none';
         }
+        
     } catch (error) {
-        console.error('Error fetching progress from PS1 GERAL:', error);
+        console.error('Error fetching progress from PSMulti GERAL:', error);
     }
 };
 
 /**
- * Fetches planning data from Google Sheets PS1 (for second card)
+ * Fetches planning data from Google Sheets PSMulti for active slots
  */
 const fetchPlanningData = async () => {
-    // Read from PS1, row 2 (first data row), all columns
-    const SHEET_URL = `https://docs.google.com/spreadsheets/d/1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y/gviz/tq?tqx=out:csv&sheet=PS1&range=A2:AO2`;
-
     try {
-        const response = await d3.text(SHEET_URL);
+        // Fetch all active slots
+        const slots = await fetchAllSlotsData();
         
-        // Parse CSV response
-        const values = response.split('\n')[0]?.split(',').map(v => v.replace(/^"|"$/g, '').trim()) || [];
+        if (slots.length === 0) {
+            return { slots: [] };
+        }
         
-        return {
-            loteD: values[3] || '',   // Column D (LOTE) is index 3
-            dataPretendida: values[5] || '',  // Column F (DATA PRETENDIDA) is index 5
-            loteAM: values[43] || ''  // Column AM (Lote1) is index 43
-        };
-
+        const slotsData = [];
+        
+        for (const slot of slots) {
+            const SHEET_URL = `https://docs.google.com/spreadsheets/d/${chartConfig.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${chartConfig.sheetName}&range=A${slot.rowIndex}:F${slot.rowIndex}`;
+            
+            try {
+                const response = await d3.text(SHEET_URL);
+                const values = response.split('\n')[0]?.split(',').map(v => v.replace(/^"|"$/g, '').trim()) || [];
+                
+                slotsData.push({
+                    slotNumber: slot.slotNumber,
+                    lote: values[1] || '',        // Column B (LOTE) is index 1
+                    quantidade: values[2] || '',  // Column C (QUANTIDADE / LOTE) is index 2
+                    dataPretendida: values[5] || '' // Column F (DATA PRETENDIDA) is index 5
+                });
+            } catch (error) {
+                console.error(`Error fetching planning data for Slot ${slot.slotNumber}:`, error);
+            }
+        }
+        
+        return { slots: slotsData };
+        
     } catch (error) {
-        console.error('Error fetching planning data from PS1:', error);
-        return { loteD: '', dataPretendida: '', loteAM: '' };
+        console.error('Error fetching planning data from PSMulti:', error);
+        return { slots: [] };
     }
 };
 
@@ -347,11 +602,11 @@ const fetchBufferData = async () => {
 };
 
 /**
- * Fetches status from Google Sheets PS1
+ * Fetches status from Google Sheets PSMulti
  */
-const fetchStatusData = async () => {
-    // Read from PS1, row 2, column AK (STATUS)
-    const SHEET_URL = `https://docs.google.com/spreadsheets/d/1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y/gviz/tq?tqx=out:csv&sheet=PS1&range=A2:AK2`;
+const fetchStatus = async () => {
+    // Read from PSMulti, row 2, column AI (STATUS)
+    const SHEET_URL = `https://docs.google.com/spreadsheets/d/1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y/gviz/tq?tqx=out:csv&sheet=PSMulti&range=A2:AI2`;
 
     try {
         const response = await d3.text(SHEET_URL);
@@ -359,20 +614,20 @@ const fetchStatusData = async () => {
         // Parse CSV response
         const values = response.split('\n')[0]?.split(',').map(v => v.replace(/^"|"$/g, '').trim()) || [];
         
-        return values[41] || 'OFF';  // Column AK (STATUS) is index 41
+        return values[34] || 'OFF';  // Column AI (STATUS) is index 34
 
     } catch (error) {
-        console.error('Error fetching status from PS1:', error);
+        console.error('Error fetching status from PSMulti:', error);
         return 'OFF';
     }
 };
 
 /**
- * Fetches GOAL chart data from Google Sheets PS1
+ * Fetches GOAL chart data from Google Sheets PSMulti
  */
 const fetchGoalData = async () => {
-    // Read from PS1, row 2, columns AN, AO, AP (Dias Prazo, Dias Usados, Folga)
-    const SHEET_URL = `https://docs.google.com/spreadsheets/d/1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y/gviz/tq?tqx=out:csv&sheet=PS1&range=A2:AP2`;
+    // Read from PSMulti, row 2, columns AN, AO, AP (Dias Prazo, Dias Usados, Folga)
+    const SHEET_URL = `https://docs.google.com/spreadsheets/d/1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y/gviz/tq?tqx=out:csv&sheet=PSMulti&range=A2:AP2`;
 
     try {
         const response = await d3.text(SHEET_URL);
@@ -387,7 +642,7 @@ const fetchGoalData = async () => {
         };
 
     } catch (error) {
-        console.error('Error fetching GOAL data from PS1:', error);
+        console.error('Error fetching GOAL data from PSMulti:', error);
         return { diasPrazo: 0, diasUsados: 0, folga: 0 };
     }
 };
@@ -481,15 +736,41 @@ const updateInfoPanel = async () => {
     
     // Update second card (info-panel-card-1) with buffer from soldaduraEditável
     const bufferItems = await fetchBufferData();
-    const currentLote = planningData.loteD; // Current LOTE from PS1
+    const currentLote = planningData.slots && planningData.slots.length > 0 ? planningData.slots[0].lote : ''; // Current LOTE from first slot
+    
+    // Fetch slots to check for Slot_2_Em Curso
+    const slots = await fetchAllSlotsData();
+    let slot2Lote = null;
+    
+    // If Slot 2 exists, fetch its LOTE from column B
+    if (slots.length >= 2) {
+        const slot2 = slots[1];
+        const SHEET_URL_SLOT2 = `https://docs.google.com/spreadsheets/d/${chartConfig.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${chartConfig.sheetName}&range=B${slot2.rowIndex}`;
+        try {
+            const response = await d3.text(SHEET_URL_SLOT2);
+            slot2Lote = response.split('\n')[0]?.trim().replace(/"/g, '');
+            console.log(`📦 Slot 2 LOTE: ${slot2Lote}`);
+        } catch (error) {
+            console.error('Error fetching Slot 2 LOTE:', error);
+        }
+    }
     
     const infoPanelCard1 = document.querySelector('.info-panel-content-1');
     if (infoPanelCard1) {
         if (bufferItems.length > 0) {
             infoPanelCard1.innerHTML = bufferItems
                 .map(item => {
-                    const isActive = item === currentLote;
-                    return `<div class="buffer-item ${isActive ? 'active' : ''}">${item}</div>`;
+                    const isSlot1Active = item === currentLote;
+                    const isSlot2Active = slot2Lote && item === slot2Lote;
+                    
+                    let className = 'buffer-item';
+                    if (isSlot1Active) {
+                        className += ' active';
+                    } else if (isSlot2Active) {
+                        className += ' active-slot2';
+                    }
+                    
+                    return `<div class="${className}">${item}</div>`;
                 })
                 .join('');
         } else {
@@ -497,17 +778,40 @@ const updateInfoPanel = async () => {
         }
     }
     
-    // Update PLANEAMENTO card with planning data from PS1
+    // Update PLANEAMENTO card with planning data from PSMulti
     const infoPanelCard2 = document.querySelector('.info-panel-content-2');
     if (infoPanelCard2) {
-        infoPanelCard2.innerHTML = `
-            <div class="info-line">${planningData.dataPretendida}</div>
-            <div class="info-line">${planningData.loteAM}</div>
-            <div class="info-line">${planningData.loteD}</div>
-        `;
+        if (planningData.slots && planningData.slots.length > 0) {
+            if (planningData.slots.length === 1) {
+                // Single slot - display in single column
+                const slotData = planningData.slots[0];
+                infoPanelCard2.innerHTML = `
+                    <div class="slot-column">
+                        <div class="info-line">${slotData.dataPretendida}</div>
+                        <div class="info-line">Qtd: ${slotData.quantidade}</div>
+                        <div class="info-line">${slotData.lote}</div>
+                    </div>
+                `;
+            } else {
+                // Multiple slots - display side by side
+                const slotsHtml = planningData.slots.map(slotData => {
+                    return `
+                        <div class="slot-column">
+                            <div class="info-line">${slotData.dataPretendida}</div>
+                            <div class="info-line">Qtd: ${slotData.quantidade}</div>
+                            <div class="info-line">${slotData.lote}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+                infoPanelCard2.innerHTML = slotsHtml;
+            }
+        } else {
+            infoPanelCard2.innerHTML = '<div class="info-line">No active slots</div>';
+        }
     }
     
-    // Update status indicator based on STATUS column from PS1
+    // Update status indicator based on STATUS column from PSMulti
     const status = (await fetchStatusData()).toUpperCase();
     const statusIndicator = document.getElementById('status-indicator');
     if (statusIndicator) {
@@ -520,7 +824,7 @@ const updateInfoPanel = async () => {
         }
     }
     
-    // Update GOAL chart with data from PS1
+    // Update GOAL chart with data from PSMulti
     const goalData = await fetchGoalData();
     updateGoalChart(goalData.diasPrazo, goalData.diasUsados, goalData.folga);
     
