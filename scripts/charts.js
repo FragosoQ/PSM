@@ -666,10 +666,10 @@ const fetchStatus = async () => {
             }
         }
         
-        // Se qualquer um for OFF, retorna OFF
-        // Apenas se todos forem ON, retorna ON
-        const hasOff = statusValues.some(status => status === 'OFF');
-        const result = hasOff ? 'OFF' : 'ON';
+        // Se pelo menos um for ON, retorna ON
+        // Se todos forem OFF, retorna OFF
+        const hasOn = statusValues.some(status => status === 'ON');
+        const result = hasOn ? 'ON' : 'OFF';
         
         console.log(`📊 Status check - Slots: ${statusValues.join(', ')} → Result: ${result}`);
         return result;
