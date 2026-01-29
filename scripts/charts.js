@@ -590,7 +590,7 @@ const fetchPlanningData = async () => {
         const slotsData = [];
         
         for (const slot of slots) {
-            const SHEET_URL = `https://docs.google.com/spreadsheets/d/${chartConfig.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${chartConfig.sheetName}&range=A${slot.rowIndex}:F${slot.rowIndex}`;
+            const SHEET_URL = `https://docs.google.com/spreadsheets/d/${chartConfig.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${chartConfig.sheetName}&range=A${slot.rowIndex}:H${slot.rowIndex}`;
             
             try {
                 const response = await d3.text(SHEET_URL);
@@ -600,6 +600,7 @@ const fetchPlanningData = async () => {
                     slotNumber: slot.slotNumber,
                     lote: values[1] || '',        // Column B (LOTE) is index 1
                     quantidade: values[2] || '',  // Column C (QUANTIDADE / LOTE) is index 2
+                    inicioSoldadura: values[7] || '', // Column H (INÍCIO SOLDADURA / ACABAMENTO) is index 7
                     dataPretendida: values[5] || '' // Column F (DATA PRETENDIDA) is index 5
                 });
             } catch (error) {
@@ -880,7 +881,7 @@ const updateInfoPanel = async () => {
                 const slotData = planningData.slots[0];
                 infoPanelCard2.innerHTML = `
                     <div class="slot-column">
-                        <div class="info-line">${slotData.dataPretendida}</div>
+                        <div class="info-line">${slotData.inicioSoldadura}</div>
                         <div class="info-line">Qtd: ${slotData.quantidade}</div>
                         <div class="info-line">${slotData.lote}</div>
                     </div>
@@ -890,7 +891,7 @@ const updateInfoPanel = async () => {
                 const slotsHtml = planningData.slots.map(slotData => {
                     return `
                         <div class="slot-column">
-                            <div class="info-line">${slotData.dataPretendida}</div>
+                            <div class="info-line">${slotData.inicioSoldadura}</div>
                             <div class="info-line">Qtd: ${slotData.quantidade}</div>
                             <div class="info-line">${slotData.lote}</div>
                         </div>
