@@ -309,9 +309,65 @@
   </style>
 
   <script>
+    // Refresh automático a cada 2 horas
     setTimeout(() => {
       location.reload();
     }, 7200000);
+
+    // Monitoramento da coluna Z (GERAL) para refresh automático
+    let lastGeralValue = null;
+    const CHECK_INTERVAL = 30000; // Verifica a cada 30 segundos
+
+    async function checkGeralColumnChange() {
+      try {
+        const url = `https://docs.google.com/spreadsheets/d/1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y/gviz/tq?tqx=out:json&sheet=PSMulti`;
+        const response = await fetch(url);
+        
+        if (!response.ok) return;
+        
+        const text = await response.text();
+        const jsonString = text.substring(47, text.length - 2);
+        const json = JSON.parse(jsonString);
+        
+        const cols = json.table.cols;
+        const rows = json.table.rows;
+        
+        // Encontra o índice da coluna GERAL (coluna Z)
+        const geralColIndex = cols.findIndex(col => 
+          (col.label || '').toUpperCase() === 'GERAL'
+        );
+        
+        if (geralColIndex === -1) {
+          console.warn('⚠️ Coluna GERAL não encontrada');
+          return;
+        }
+        
+        // Pega todos os valores da coluna GERAL (exceto cabeçalho)
+        const geralValues = rows
+          .map(row => row.c[geralColIndex]?.v)
+          .filter(val => val !== null && val !== undefined)
+          .join('|'); // Concatena todos os valores
+        
+        // Verifica se houve mudança
+        if (lastGeralValue !== null && lastGeralValue !== geralValues) {
+          console.log('🔄 Coluna GERAL alterada! Fazendo refresh...');
+          location.reload();
+        } else if (lastGeralValue === null) {
+          console.log('📊 Valor inicial da coluna GERAL registrado');
+        }
+        
+        lastGeralValue = geralValues;
+        
+      } catch (error) {
+        console.error('❌ Erro ao verificar coluna GERAL:', error);
+      }
+    }
+
+    // Inicia a verificação periódica
+    setInterval(checkGeralColumnChange, CHECK_INTERVAL);
+    
+    // Primeira verificação após 5 segundos (dá tempo para a página carregar)
+    setTimeout(checkGeralColumnChange, 5000);
   </script>
 </head>
 

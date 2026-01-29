@@ -85,7 +85,7 @@ class Lines {
           }
           
           console.log(`✅ Creating line: Portugal → ${end.name} (${end.latitude}, ${end.longitude}) - Slot ${slotNumber}`);
-          const line = new Line(portugal, end, slotNumber);
+          const line = new Line(portugal, end, slotNumber); // Usa slotNumber para cor
           
           // Adiciona identificador único para cada linha (importante para linhas duplicadas)
           line.mesh.name = `line-${origin}-${endCountryName}-${index}`;
@@ -140,15 +140,25 @@ class Line {
   }
 
   createMaterial() {
-    // Busca a cor do slot no chartConfig (se disponível)
+    // Busca a cor baseada no número do Slot
     let lineColor = config.colors.globeLines; // Cor padrão
     
+    console.log(`🔍 Creating material for Slot ${this.slotNumber}`);
+    console.log(`📊 chartConfig available:`, typeof chartConfig !== 'undefined');
+    
     if (typeof chartConfig !== 'undefined' && chartConfig.colors && chartConfig.colors.slotColors) {
-      const slotColorIndex = this.slotNumber - 1; // Slot 1 = index 0
-      if (chartConfig.colors.slotColors[slotColorIndex]) {
-        lineColor = chartConfig.colors.slotColors[slotColorIndex];
+      const colorIndex = this.slotNumber - 1; // Slot_1 = index 0 (azul), Slot_2 = index 1 (cinza), Slot_3 = index 2 (amarelo)
+      console.log(`📊 colorIndex: ${colorIndex}, slotColors length: ${chartConfig.colors.slotColors.length}`);
+      console.log(`📊 Available colors:`, chartConfig.colors.slotColors);
+      
+      if (chartConfig.colors.slotColors[colorIndex]) {
+        lineColor = chartConfig.colors.slotColors[colorIndex];
         console.log(`🎨 Line color for Slot ${this.slotNumber}: ${lineColor}`);
+      } else {
+        console.warn(`⚠️ No color found for Slot ${this.slotNumber} at index ${colorIndex}`);
       }
+    } else {
+      console.warn(`⚠️ chartConfig not available or missing slotColors`);
     }
     
     return new MeshLineMaterial({

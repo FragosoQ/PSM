@@ -1,54 +1,103 @@
 /**
- * Normalizes country names to match database format
+ * Normalizes country names to match database format (countries.js)
  * @param {string} countryName - Country name from sheet
- * @returns {string} Normalized country name
+ * @returns {string} Normalized country name matching countries.js format
  */
 const normalizeCountryName = (countryName) => {
     if (!countryName) return '';
     
-    const normalized = countryName.trim().toLowerCase();
+    const normalized = countryName.trim().toUpperCase();
     
-    // Mapeamento de nomes alternativos
+    // Direct mapping PT -> countries.js format (all UPPERCASE)
     const nameMapping = {
-        'portugal': 'Portugal',
-        'espanha': 'Spain',
-        'frança': 'France',
-        'france': 'France',
-        'alemanha': 'Germany',
-        'itália': 'Italy',
-        'croácia': 'Croatia',
-        'reino unido': 'United Kingdom',
-        'eua': 'United States',
-        'usa': 'United States',
-        'estados unidos': 'United States',
-        'united states': 'United States',
-        'brasil': 'Brazil',
-        'moçambique': 'Mozambique',
-        'angola': 'Angola',
-        'cabo verde': 'Cabo Verde',
-        'são tomé e príncipe': 'Sao Tome and Principe',
-        'guiné-bissau': 'Guinea-Bissau',
-        'guiné equatorial': 'Equatorial Guinea',
-        'timor-leste': 'Timor-Leste',
-        'macau': 'Macao SAR, China',
-        'china': 'China',
-        'japão': 'Japan',
-        'índia': 'India',
-        'austrália': 'Australia',
-        'canadá': 'Canada',
-        'méxico': 'Mexico',
-        'argentina': 'Argentina',
-        'chile': 'Chile',
-        'colômbia': 'Colombia',
-        'peru': 'Peru',
-        'marrocos': 'Morocco',
-        'egito': 'Egypt, Arab Rep.',
-        'nigéria': 'Nigeria',
-        'quénia': 'Kenya',
-        'áfrica do sul': 'South Africa'
+        'PORTUGAL': 'PORTUGAL',
+        'ESPANHA': 'ESPANHA',
+        'FRANÇA': 'FRANÇA',
+        'FRANCE': 'FRANÇA',
+        'ALEMANHA': 'ALEMANHA',
+        'ITÁLIA': 'ITÁLIA',
+        'ITALIA': 'ITÁLIA',
+        'CROÁCIA': 'CROÁCIA',
+        'CROATIA': 'CROÁCIA',
+        'REINO UNIDO': 'UK',
+        'UK': 'UK',
+        'EUA': 'USA',
+        'USA': 'USA',
+        'ESTADOS UNIDOS': 'USA',
+        'UNITED STATES': 'USA',
+        'BRASIL': 'BRASIL',
+        'ARGENTINA': 'ARGENTINA',
+        'AUSTRÁLIA': 'AUSTRÁLIA',
+        'AUSTRALIA': 'AUSTRÁLIA',
+        'ÁUSTRIA': 'Áustria',
+        'AUSTRIA': 'Áustria',
+        'BÉLGICA': 'BÉLGICA',
+        'BELGIUM': 'BÉLGICA',
+        'BULGÁRIA': 'BULGÁRIA',
+        'BULGARIA': 'BULGÁRIA',
+        'CHÉQUIA': 'CHÉQUIA',
+        'CZECH REPUBLIC': 'CHÉQUIA',
+        'CHILE': 'CHILE',
+        'CHIPRE': 'CHIPRE',
+        'CYPRUS': 'CHIPRE',
+        'COLÔMBIA': 'COLÔMBIA',
+        'COLOMBIA': 'COLÔMBIA',
+        'DINAMARCA': 'DINAMARCA',
+        'DENMARK': 'DINAMARCA',
+        'ESLOVÁQUIA': 'ESLOVÁQUIA',
+        'SLOVAKIA': 'ESLOVÁQUIA',
+        'FILIPINAS': 'FILIPINAS',
+        'PHILIPPINES': 'FILIPINAS',
+        'FINLÂNDIA': 'FINLÂNDIA',
+        'FINLAND': 'FINLÂNDIA',
+        'GRÉCIA': 'GRÉCIA',
+        'GREECE': 'GRÉCIA',
+        'GUATEMALA': 'GUATEMALA',
+        'HONDURAS': 'HONDURAS',
+        'HUNGRIA': 'HUNGRIA',
+        'HUNGARY': 'HUNGRIA',
+        'ISRAEL': 'ISRAEL',
+        'LITUÂNIA': 'LITUÂNIA',
+        'LITHUANIA': 'LITUÂNIA',
+        'MÉXICO': 'MÉXICO',
+        'MEXICO': 'MÉXICO',
+        'MONGÓLIA': 'MONGÓLIA',
+        'MONGOLIA': 'MONGÓLIA',
+        'NORUEGA': 'NORUEGA',
+        'NORWAY': 'NORUEGA',
+        'PAÍSES BAIXOS': 'PAISES BAIXOS',
+        'PAISES BAIXOS': 'PAISES BAIXOS',
+        'NETHERLANDS': 'PAISES BAIXOS',
+        'POLÓNIA': 'POLÓNIA',
+        'POLAND': 'POLÓNIA',
+        'QATAR': 'QATAR',
+        'REPÚBLICA DOMINICANA': 'REP. DOMINICANA',
+        'REP. DOMINICANA': 'REP. DOMINICANA',
+        'DOMINICAN REPUBLIC': 'REP. DOMINICANA',
+        'ROMÉNIA': 'ROMÉNIA',
+        'ROMANIA': 'ROMÉNIA',
+        'RÚSSIA': 'RÚSSIA',
+        'RUSSIA': 'RÚSSIA',
+        'ARÁBIA SAUDITA': 'SAUDI ARABIA',
+        'SAUDI ARABIA': 'SAUDI ARABIA',
+        'SUÉCIA': 'SUÉCIA',
+        'SWEDEN': 'SUÉCIA',
+        'SUÍÇA': 'SUIÇA',
+        'SWITZERLAND': 'SUIÇA',
+        'TAILÂNDIA': 'TAILANDIA',
+        'THAILAND': 'TAILANDIA',
+        'TAIWAN': 'TAIWAN',
+        'UZBEQUISTÃO': 'UZBEQUISTÃO',
+        'UZBEKISTAN': 'UZBEQUISTÃO',
+        'DUBAI': 'DUBAI',
+        'EGITO': 'EGIPTO',
+        'EGYPT': 'EGIPTO',
+        'EL SALVADOR': 'EL SALVADOR',
+        'BIELORRÚSSIA': 'BIEOLORUSSIA',
+        'BELARUS': 'BIEOLORUSSIA'
     };
     
-    return nameMapping[normalized] || countryName.trim();
+    return nameMapping[normalized] || countryName.trim().toUpperCase();
 };
 
 /**
@@ -71,13 +120,17 @@ const loadConnectionsFromPSMulti = async () => {
         const rows = json.table.rows;
         const destinationCountries = [];
         
-        // Look for rows with "Slot_1_Em Curso" or "Slot_2_Em Curso" in column A (Chave de Procura - index 0)
+        // Look for rows with "Slot_X_Em Curso" pattern
         rows.forEach((row, index) => {
             const chaveCell = row.c[0]; // Column A (Chave de Procura - index 0)
             const chaveValue = chaveCell ? chaveCell.v : null;
             
-            if (chaveValue && typeof chaveValue === 'string' && 
-                (chaveValue.includes('Slot_1_Em Curso') || chaveValue.includes('Slot_2_Em Curso'))) {
+            // Match pattern Slot_X_Em Curso to extract slot number
+            const slotMatch = chaveValue && typeof chaveValue === 'string' ? 
+                chaveValue.match(/Slot_(\d+)_Em Curso/i) : null;
+            
+            if (slotMatch) {
+                const slotNumber = parseInt(slotMatch[1], 10);
                 
                 // Get countries from columns W, X, Y (indices 22, 23, 24)
                 const country1Cell = row.c[22]; // Column W (País 1)
@@ -88,36 +141,32 @@ const loadConnectionsFromPSMulti = async () => {
                 const country2 = country2Cell ? country2Cell.v : null;
                 const country3 = country3Cell ? country3Cell.v : null;
                 
-                // Add non-empty countries with normalization (including duplicates)
+                // Add non-empty countries with slot info
                 if (country1 && country1.trim() !== '') {
                     const normalized = normalizeCountryName(country1);
-                    destinationCountries.push(normalized);
-                    console.log(`🗺️ País 1: "${country1}" → "${normalized}"`);
+                    destinationCountries.push({ country: normalized, slot: slotNumber });
+                    console.log(`🗺️ País 1: "${country1}" → "${normalized}" (Slot ${slotNumber})`);
                 }
                 if (country2 && country2.trim() !== '') {
                     const normalized = normalizeCountryName(country2);
-                    destinationCountries.push(normalized);
-                    console.log(`🗺️ País 2: "${country2}" → "${normalized}"`);
+                    destinationCountries.push({ country: normalized, slot: slotNumber });
+                    console.log(`🗺️ País 2: "${country2}" → "${normalized}" (Slot ${slotNumber})`);
                 }
                 if (country3 && country3.trim() !== '') {
                     const normalized = normalizeCountryName(country3);
-                    destinationCountries.push(normalized);
-                    console.log(`🗺️ País 3: "${country3}" → "${normalized}"`);
+                    destinationCountries.push({ country: normalized, slot: slotNumber });
+                    console.log(`🗺️ País 3: "${country3}" → "${normalized}" (Slot ${slotNumber})`);
                 }
             }
         });
         
-        // Remove duplicates - keep only unique countries
-        const uniqueCountries = [...new Set(destinationCountries)];
-        
-        // Create connections object with Portugal as origin
+        // Create connections object with Portugal as origin (keep all including duplicates)
         const connections = {
-            'Portugal': uniqueCountries
+            'Portugal': destinationCountries // Array of {country, slot} objects
         };
         
         console.log('🔗 Connections loaded from PSMulti:', connections);
-        console.log(`📊 Total countries before dedup: ${destinationCountries.length}`);
-        console.log(`📊 Unique destination countries: ${uniqueCountries.length}`, uniqueCountries);
+        console.log(`📊 Total connections: ${destinationCountries.length}`);
         
         return connections;
         
