@@ -63,7 +63,7 @@ canvas {
 .country-tag {
     display: inline-block;
     padding: 8px 16px;
-    background: rgba(192, 192, 192, 0.35);
+    background: rgba(5, 187, 237, 0.35);
     border: 2px solid rgba(5, 187, 237, 0.6);
     border-radius: 20px;
     font-size: clamp(14px, 2vw, 20px);
@@ -81,7 +81,7 @@ canvas {
 }
 
 .country-tag:hover {
-    background: rgba(192, 192, 192, 0.35);
+    background: rgba(5, 187, 237, 0.35);
     box-shadow: 0 0 15px rgba(5, 187, 237, 0.6);
     transform: scale(1.05);
 }
