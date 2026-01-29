@@ -70,8 +70,12 @@ class Lines {
         console.log(`🔵 Creating lines from Portugal to ${connections[origin].length} destinations:`, connections[origin]);
         
         // Usa forEach com índice para garantir que cria todas as linhas, incluindo duplicadas
-        connections[origin].forEach((endCountryName, index) => {
-          console.log(`🔍 Line ${index + 1}: Portugal → ${endCountryName}`);
+        connections[origin].forEach((connectionData, index) => {
+          // Suporta formato antigo (string) e novo (objeto com country e slot)
+          const endCountryName = typeof connectionData === 'string' ? connectionData : connectionData.country;
+          const slotNumber = typeof connectionData === 'object' ? connectionData.slot : 1;
+          
+          console.log(`🔍 Line ${index + 1}: Portugal → ${endCountryName} (Slot ${slotNumber})`);
           const end = getCountry(endCountryName, countries); // coordenadas do país de destino
           
           if (!end) {
@@ -80,8 +84,8 @@ class Lines {
             return; // Skip this line (continue no forEach)
           }
           
-          console.log(`✅ Creating line: Portugal → ${end.name} (${end.latitude}, ${end.longitude})`);
-          const line = new Line(portugal, end);
+          console.log(`✅ Creating line: Portugal → ${end.name} (${end.latitude}, ${end.longitude}) - Slot ${slotNumber}`);
+          const line = new Line(portugal, end, slotNumber);
           
           // Adiciona identificador único para cada linha (importante para linhas duplicadas)
           line.mesh.name = `line-${origin}-${endCountryName}-${index}`;
@@ -99,13 +103,14 @@ class Lines {
 }
 
 class Line {
-  constructor(start, end) {
+  constructor(start, end, slotNumber = 1) {
     const {globe} = config.sizes;
     const {markers} = config.scale;
 
     // Usa as coordenadas de Portugal passadas como start
     this.start = start;
     this.end = end;
+    this.slotNumber = slotNumber;
 
     this.radius = globe + globe * markers;
 
@@ -135,8 +140,19 @@ class Line {
   }
 
   createMaterial() {
+    // Busca a cor do slot no chartConfig (se disponível)
+    let lineColor = config.colors.globeLines; // Cor padrão
+    
+    if (typeof chartConfig !== 'undefined' && chartConfig.colors && chartConfig.colors.slotColors) {
+      const slotColorIndex = this.slotNumber - 1; // Slot 1 = index 0
+      if (chartConfig.colors.slotColors[slotColorIndex]) {
+        lineColor = chartConfig.colors.slotColors[slotColorIndex];
+        console.log(`🎨 Line color for Slot ${this.slotNumber}: ${lineColor}`);
+      }
+    }
+    
     return new MeshLineMaterial({
-      color: config.colors.globeLines,
+      color: lineColor,
       transparent: true,
       opacity: 0.45
     });

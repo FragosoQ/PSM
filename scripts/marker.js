@@ -38,9 +38,11 @@ class Marker {
     // Check if this is one of the destinations
     let isDestination = false;
     if (data.connections && data.connections.Portugal) {
-      isDestination = data.connections.Portugal.some(dest => 
-        dest.toUpperCase() === countryUpper
-      );
+      isDestination = data.connections.Portugal.some(dest => {
+        // Suporta formato antigo (string) e novo (objeto com country e slot)
+        const destCountry = typeof dest === 'string' ? dest : dest.country;
+        return destCountry.toUpperCase() === countryUpper;
+      });
     }
     
     // Only create label if Portugal or a destination

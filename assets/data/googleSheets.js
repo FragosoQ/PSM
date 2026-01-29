@@ -213,7 +213,7 @@ async function convertSheetDataToAppFormat(sheetData) {
   
   // Coleta todos os países únicos mencionados
   const uniqueCountries = new Set();
-  const portugalConnections = []; // Array para armazenar todas as conexões de Portugal
+  const portugalConnections = []; // Array para armazenar todas as conexões de Portugal com slot info
   
   // Sempre adiciona Portugal
   uniqueCountries.add('Portugal');
@@ -223,11 +223,13 @@ async function convertSheetDataToAppFormat(sheetData) {
   sheetData.forEach((row, index) => {
     // Verifica se a linha tem "Slot_X_Em Curso" na coluna Chave de Procura
     const chaveValue = row[chaveCol];
-    const isActiveSlot = chaveValue && /Slot_\d+_Em Curso/i.test(String(chaveValue).trim());
+    const slotMatch = chaveValue && String(chaveValue).trim().match(/Slot_(\d+)_Em Curso/i);
     
-    if (!isActiveSlot) {
+    if (!slotMatch) {
       return; // Pula esta linha se não for um slot ativo
     }
+    
+    const slotNumber = parseInt(slotMatch[1], 10);
     
     const countries = [
       row[country1Col],
@@ -244,8 +246,11 @@ async function convertSheetDataToAppFormat(sheetData) {
       const countryName = String(country).trim();
       if (countryName) {
         uniqueCountries.add(countryName);
-        // Adiciona conexão Portugal → País
-        portugalConnections.push(countryName);
+        // Adiciona conexão Portugal → País com informação do slot
+        portugalConnections.push({
+          country: countryName,
+          slot: slotNumber
+        });
       }
     });
   });
@@ -279,27 +284,31 @@ async function convertSheetDataToAppFormat(sheetData) {
   // Cria conexões: Portugal para cada país mencionado (múltiplas linhas)
   const connections = {};
   
-  // Normaliza as conexões de Portugal
+  // Normaliza as conexões de Portugal mantendo informação do slot
   const normalizedPortugalConnections = portugalConnections
-    .map(name => {
-      const c = findCountryCoordinates(name, countriesDB);
-      return c ? c.name : name;
+    .map(conn => {
+      const c = findCountryCoordinates(conn.country, countriesDB);
+      return c ? { country: c.name, slot: conn.slot } : { country: conn.country, slot: conn.slot };
     })
-    .filter(name => countries.some(c => c.name === name)); // Só inclui se existir nas coordenadas
+    .filter(conn => countries.some(c => c.name === conn.country)); // Só inclui se existir nas coordenadas
   
   if (normalizedPortugalConnections.length > 0) {
     connections['Portugal'] = normalizedPortugalConnections;
     console.log(`🔗 Portugal → ${normalizedPortugalConnections.length} conexões (incluindo duplicadas por linha)`);
-    console.log(`📊 Array de conexões:`, normalizedPortugalConnections);
+    console.log(`📊 Array de conexões com slots:`, normalizedPortugalConnections);
     
     // Mostra estatísticas
-    const uniqueCountries = [...new Set(normalizedPortugalConnections)];
+    const uniqueCountries = [...new Set(normalizedPortugalConnections.map(c => c.country))];
     console.log(`📍 Países únicos: ${uniqueCountries.length} -`, uniqueCountries.join(', '));
     
-    // Mostra quantas vezes cada país aparece
+    // Mostra quantas vezes cada país aparece e de que slots
     const countMap = {};
-    normalizedPortugalConnections.forEach(country => {
-      countMap[country] = (countMap[country] || 0) + 1;
+    normalizedPortugalConnections.forEach(conn => {
+      if (!countMap[conn.country]) {
+        countMap[conn.country] = { total: 0, slots: [] };
+      }
+      countMap[conn.country].total++;
+      countMap[conn.country].slots.push(conn.slot);
     });
     console.log(`📈 Frequência por país:`, countMap);
   }
