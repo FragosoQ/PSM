@@ -38,14 +38,51 @@ class Dot {
 
 		this._path = null;
 		this._pathIndex = 0;
+		this._lastLineIndex = -1; // Track last used line to avoid repetition
+		this._recentLines = []; // Track recently used lines
 	}
 
 	assignToLine() {
 		if(countries.selected) {
-			const lines = countries.selected.children
-			const index = Math.floor(Math.random() * lines.length);
+			const lines = countries.selected.children;
+			const numLines = lines.length;
+			
+			if (numLines === 0) return;
+			
+			// If only one line, use it
+			if (numLines === 1) {
+				this._path = lines[0]._path;
+				this._lastLineIndex = 0;
+				return;
+			}
+			
+			// For multiple lines, avoid repeating recently used ones
+			let index;
+			let attempts = 0;
+			const maxAttempts = 10;
+			
+			// Try to find a line that wasn't used recently
+			do {
+				index = Math.floor(Math.random() * numLines);
+				attempts++;
+			} while (
+				attempts < maxAttempts && 
+				this._recentLines.includes(index) && 
+				numLines > this._recentLines.length
+			);
+			
 			const line = lines[index];
 			this._path = line._path;
+			this._lastLineIndex = index;
+			
+			// Track recent lines (keep last 3 or half of total lines, whichever is smaller)
+			const maxRecent = Math.min(3, Math.floor(numLines / 2));
+			this._recentLines.push(index);
+			if (this._recentLines.length > maxRecent) {
+				this._recentLines.shift(); // Remove oldest
+			}
+			
+			console.log(`🎯 Dot assigned to arc ${index + 1}/${numLines} (recent: [${this._recentLines.join(', ')}])`);
 		}
 	}
 

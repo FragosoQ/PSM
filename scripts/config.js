@@ -31,7 +31,7 @@ const config = {
 		markerPoint: true
 	},
 	dots: {
-		total: 1
+		total: 3 // Multiple dots for better random distribution across arcs
 	}
 }
 
