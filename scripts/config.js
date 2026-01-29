@@ -16,7 +16,7 @@ const config = {
 		globe: 0.001
 	},
 	colors: {
-		globeDotColor: '#05d5fa',
+		globeDotColor: /*'#05d5fa'*/'#055afa',
 		globeMarkerColor: 'rgb(143, 216, 216)',
 		globeMarkerGlow: 'rgb(255, 255, 255)',
 		globeLines: 'rgb(255, 255, 255)',
