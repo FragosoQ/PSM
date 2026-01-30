@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teste - Network Status</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: 'Open Sans', Arial, sans-serif;
+      background: radial-gradient(circle, #020d3a, #000000);
+      color: white;
+      min-height: 100vh;
+    }
+    
+    .test-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .demo-area {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 30px;
+      margin: 20px 0;
+      position: relative;
+      min-height: 150px;
+    }
+    
+    .info-box {
+      background: rgba(5, 187, 237, 0.1);
+      border: 1px solid rgba(5, 187, 237, 0.3);
+      border-radius: 8px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    
+    .info-box h3 {
+      margin-top: 0;
+      color: #05bbed;
+    }
+    
+    .info-box ul {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+    
+    .info-box li {
+      margin: 8px 0;
+    }
+    
+    .test-buttons {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+    
+    .test-buttons button {
+      padding: 12px 24px;
+      background: rgba(5, 187, 237, 0.2);
+      border: 1px solid rgba(5, 187, 237, 0.5);
+      border-radius: 5px;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    
+    .test-buttons button:hover {
+      background: rgba(5, 187, 237, 0.4);
+      transform: translateY(-2px);
+    }
+    
+    #status-log {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      padding: 15px;
+      margin: 20px 0;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+    
+    .log-entry {
+      margin: 5px 0;
+      padding: 5px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .log-entry.online {
+      color: #2ecc71;
+    }
+    
+    .log-entry.offline {
+      color: #e74c3c;
+    }
+    
+    /* Network Status Indicator - Mesmos estilos do projeto */
+    #network-status-container {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 1000;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #network-status-container .status-icon {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transition: opacity 0.3s ease;
+      opacity: 0.5;
+    }
+
+    /* Animação de pulso para offline */
+    @keyframes pulse-offline {
+      0%, 100% { 
+        opacity: 0.5;
+        transform: scale(1);
+      }
+      50% { 
+        opacity: 0.35;
+        transform: scale(1.05);
+      }
+    }
+
+    #status-icon-offline {
+      animation: pulse-offline 2s ease-in-out infinite;
+    }
+    
+    code {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+    }
+  </style>
+</head>
+<body>
+  
+  <!-- Network Status Indicator -->
+  <div id="network-status-container">
+    <img id="status-icon-online" class="status-icon" src="https://static.wixstatic.com/media/a6967f_f5c3654000224207a9b1a990b32e1ec2~mv2.png" alt="Online" />
+    <img id="status-icon-offline" class="status-icon" src="https://static.wixstatic.com/media/a6967f_579e5220a23f42ad883c5df1380b1bff~mv2.png" alt="Offline" style="display: none;" />
+  </div>
+  
+  <div class="test-container">
+    <h1>🌐 Teste - Indicador de Status de Rede</h1>
+    
+    <div class="demo-area">
+      <h2 style="margin-top: 0;">Visualização do Indicador</h2>
+      <p>O ícone no canto superior esquerdo muda automaticamente baseado no estado da rede:</p>
+      <ul>
+        <li><strong>Online:</strong> Ícone branco com brilho verde</li>
+        <li><strong>Offline:</strong> Ícone vermelho pulsante com efeito de alerta</li>
+      </ul>
+    </div>
+    
+    <div class="info-box">
+      <h3>ℹ️ Como Funciona</h3>
+      <ul>
+        <li>Detecção automática usando <code>navigator.onLine</code></li>
+        <li>Verificação real de conectividade com ping periódico</li>
+        <li>Event listeners para mudanças instantâneas de rede</li>
+        <li>Animação de pulso quando offline para chamar atenção</li>
+      </ul>
+    </div>
+    
+    <div class="info-box">
+      <h3>🧪 Como Testar</h3>
+      <ul>
+        <li><strong>No Chrome/Edge:</strong> DevTools → Network → Throttling → Offline</li>
+        <li><strong>No Firefox:</strong> DevTools → Network → Throttling → Offline</li>
+        <li><strong>Fisicamente:</strong> Desligar/ligar o Wi-Fi do computador</li>
+        <li><strong>Dev Container:</strong> Desconectar/reconectar a rede do container</li>
+      </ul>
+    </div>
+    
+    <div class="test-buttons">
+      <button onclick="simulateOffline()">📵 Simular Offline</button>
+      <button onclick="simulateOnline()">📶 Simular Online</button>
+      <button onclick="checkStatus()">🔍 Verificar Status Atual</button>
+      <button onclick="clearLog()">🗑️ Limpar Log</button>
+    </div>
+    
+    <div id="status-log">
+      <div class="log-entry">Log de eventos de rede aparecerá aqui...</div>
+    </div>
+    
+    <div class="info-box" style="margin-top: 30px;">
+      <h3>📋 Informações Técnicas</h3>
+      <p><strong>Status Atual do Navegador:</strong> <span id="browser-status"></span></p>
+      <p><strong>Última Verificação:</strong> <span id="last-check"></span></p>
+      <p><strong>Verificações Automáticas:</strong> A cada 30 segundos</p>
+    </div>
+  </div>
+  
+  <script>
+    // Funções auxiliares para o teste
+    function addLog(message, type = 'info') {
+      const log = document.getElementById('status-log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      const time = new Date().toLocaleTimeString('pt-PT');
+      entry.textContent = `[${time}] ${message}`;
+      log.insertBefore(entry, log.firstChild);
+      
+      // Manter apenas últimas 20 entradas
+      while (log.children.length > 20) {
+        log.removeChild(log.lastChild);
+      }
+    }
+    
+    function updateBrowserStatus() {
+      const status = navigator.onLine ? 'Online ✓' : 'Offline ✗';
+      const statusColor = navigator.onLine ? '#2ecc71' : '#e74c3c';
+      document.getElementById('browser-status').innerHTML = 
+        `<span style="color: ${statusColor}; font-weight: bold;">${status}</span>`;
+    }
+    
+    function simulateOffline() {
+      addLog('⚠️ Nota: Não é possível simular offline via JavaScript. Use as DevTools!', 'offline');
+      alert('Para testar offline:\n\n1. Abra as DevTools (F12)\n2. Vá para a tab Network\n3. Mude o Throttling para "Offline"\n4. Observe o ícone mudar');
+    }
+    
+    function simulateOnline() {
+      addLog('ℹ️ Verifique se o Throttling está em "No throttling" nas DevTools', 'online');
+      checkStatus();
+    }
+    
+    function checkStatus() {
+      updateBrowserStatus();
+      const status = navigator.onLine ? 'ONLINE' : 'OFFLINE';
+      const type = navigator.onLine ? 'online' : 'offline';
+      addLog(`Status verificado: ${status}`, type);
+      document.getElementById('last-check').textContent = new Date().toLocaleTimeString('pt-PT');
+    }
+    
+    function clearLog() {
+      document.getElementById('status-log').innerHTML = 
+        '<div class="log-entry">Log limpo. Aguardando novos eventos...</div>';
+    }
+    
+    // Inicialização
+    window.addEventListener('DOMContentLoaded', () => {
+      updateBrowserStatus();
+      checkStatus();
+      addLog('Sistema de monitorização iniciado', 'online');
+      
+      // Atualizar status do navegador periodicamente
+      setInterval(updateBrowserStatus, 1000);
+    });
+    
+    // Listeners para eventos de rede
+    window.addEventListener('online', () => {
+      addLog('🟢 Conexão restabelecida!', 'online');
+      updateBrowserStatus();
+    });
+    
+    window.addEventListener('offline', () => {
+      addLog('🔴 Conexão perdida!', 'offline');
+      updateBrowserStatus();
+    });
+  </script>
+  
+  <!-- Script principal do network status -->
+  <script src="scripts/network-status.js"></script>
+  
+</body>
+</html>

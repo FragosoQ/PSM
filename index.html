@@ -378,6 +378,12 @@
 <body>
   <img src="https://static.wixstatic.com/media/a6967f_0c98d57376be4290aba002d8ba028a92~mv2.webp" alt="Logo" class="top-left-logo" id="main-logo" />
   <img src="https://static.wixstatic.com/media/a6967f_806fe8fab41d42888a69ac911bb0a451~mv2.png" alt="Second Logo" class="top-right-logo" />
+  
+  <!-- Network Status Indicator -->
+  <div id="network-status-container">
+    <img id="status-icon-online" class="status-icon" src="https://static.wixstatic.com/media/a6967f_f5c3654000224207a9b1a990b32e1ec2~mv2.png" alt="Online" />
+    <img id="status-icon-offline" class="status-icon" src="https://static.wixstatic.com/media/a6967f_579e5220a23f42ad883c5df1380b1bff~mv2.png" alt="Offline" style="display: none;" />
+  </div>
 
   <div class="destination-card">
     <div class="destination-title" id="destination-title">Loading...</div>
@@ -494,6 +500,9 @@
   <script src="scripts/camera.js?v=20251125"></script>
 
   <script src="scripts/utils.js?v=20251125"></script>
+  
+  <!-- Network Status Monitor -->
+  <script src="scripts/network-status.js?v=20251125"></script>
 
 </body>
 </html>

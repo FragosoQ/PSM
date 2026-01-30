@@ -30,6 +30,43 @@ canvas {
 .top-left-logo { left: 2vw; }
 .top-right-logo { right: 2vw; }
 
+/* NETWORK STATUS INDICATOR */
+#network-status-container {
+    position: fixed;
+    top: 100px;
+    left: 60px;
+    z-index: 1000;
+    width: clamp(40px, 5vw, 60px);
+    height: clamp(40px, 5vw, 60px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#network-status-container .status-icon {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: opacity 0.3s ease;
+    opacity: 0.5;
+}
+
+/* Animação de pulso para offline */
+@keyframes pulse-offline {
+    0%, 100% { 
+        opacity: 0.5;
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.35;
+        transform: scale(1.05);
+    }
+}
+
+#status-icon-offline {
+    animation: pulse-offline 2s ease-in-out infinite;
+}
+
 /* DESTINATION CARD */
 .destination-card {
     position: fixed;
@@ -246,6 +283,14 @@ canvas {
 @media (max-width: 768px) {
     /* Logos menores */
     .top-left-logo, .top-right-logo { width: 60px; top: 10px; }
+    
+    /* Network status ajustado para mobile */
+    #network-status-container {
+        top: 40px;
+        left: 20px;
+        width: 35px;
+        height: 35px;
+    }
     
     /* Destination centralizado */
     .destination-card {
