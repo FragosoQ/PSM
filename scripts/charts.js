@@ -175,11 +175,11 @@ const chartConfig = {
             '#4b8cf2', // Azul - Slot_1_Em Curso
             '#C0C0C0', // Cinza Prateado - Slot_2_Em Curso
             '#FFD700', // Amarelo - Slot_3_Em Curso
-            '#FF69B4', // Rosa - Slot_4_Em Curso
+            '#FF6347', // Tomate - Slot_4_Em Curso
             '#00CED1', // Turquesa - Slot_5_Em Curso
             '#9370DB', // Roxo médio - Slot_6_Em Curso
             '#32CD32', // Verde lima - Slot_7_Em Curso
-            '#FF6347'  // Tomate - Slot_8_Em Curso
+            '#FF69B4'  // Rosa - Slot_8_Em Curso
         ]
     },
     spreadsheetId: '1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y',
