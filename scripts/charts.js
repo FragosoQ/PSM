@@ -161,9 +161,6 @@ const mapCountryToEnglish = (countryNamePT) => {
     return ptToEn[normalized] || countryNamePT.toUpperCase();
 };
 
-// Fixed size for all pie charts (diameter in pixels)
-const FIXED_CHART_SIZE = 120;
-
 // Configuration for charts
 const chartConfig = {
     colors: {
@@ -383,8 +380,8 @@ const drawDonutChart = (containerId, percentage, fillColor) => {
     const containerNode = container.node();
     if (!containerNode) return;
 
-    // Use fixed size for consistency across all cards
-    const size = FIXED_CHART_SIZE;
+    // Fixed size for all pie charts to ensure consistency across all cards
+    const size = 120;
 
     const radius = size / 2;
     const innerRadius = radius * 0.65;
@@ -484,8 +481,8 @@ const drawMultipleDonutCharts = (containerId, chartsData) => {
     // Determine layout based on number of charts
     const isGridLayout = chartsData.length > 2;
     
-    // Use fixed size for consistency across all cards
-    const size = FIXED_CHART_SIZE;
+    // Fixed size for all pie charts to ensure consistency across all cards
+    const size = 120;
 
     const radius = size / 2;
     const innerRadius = radius * 0.65;
