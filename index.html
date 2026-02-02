@@ -34,6 +34,12 @@
       grid-template-rows: 1fr 1fr auto auto;
     }
     
+    /* Grid 2x2 quando houver mais de 2 cards visíveis */
+    .grid-container.multiple-charts {
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr) auto auto;
+    }
+    
     /* Ajuste quando houver mais de 3 slots - reduz altura dos cards superiores */
     .grid-container.expanded-planeamento {
       grid-template-rows: 0.8fr 0.8fr auto auto;

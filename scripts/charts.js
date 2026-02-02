@@ -615,6 +615,9 @@ const updateAllCharts = async () => {
 
     // Fetch all slots (Slot_1_Em Curso, Slot_2_Em Curso)
     const slots = await fetchAllSlotsData();
+    
+    // Contador de charts visíveis
+    let visibleChartsCount = 0;
 
     for (const chart of charts) {
         // Skip charts with null column (não existem)
@@ -623,6 +626,10 @@ const updateAllCharts = async () => {
             d3.select(chart.id).style('display', 'none');
             continue;
         }
+        
+        // Incrementa contador de charts visíveis
+        visibleChartsCount++;
+        d3.select(chart.id).style('display', '');
         
         if (slots.length === 0) {
             // Se não existem slots, mostrar um gráfico default (usando a primeira linha como fallback)
@@ -646,6 +653,16 @@ const updateAllCharts = async () => {
                 });
             }
             drawMultipleDonutCharts(chart.id, chartsData);
+        }
+    }
+    
+    // Aplica classe se houver mais de 2 cards visíveis
+    const gridContainer = document.querySelector('.grid-container');
+    if (gridContainer) {
+        if (visibleChartsCount > 2) {
+            gridContainer.classList.add('multiple-charts');
+        } else {
+            gridContainer.classList.remove('multiple-charts');
         }
     }
 };
