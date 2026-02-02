@@ -783,7 +783,7 @@ const fetchPlanningData = async () => {
  * Fetches buffer data from soldaduraEditável sheet (D2:D9)
  */
 const fetchBufferData = async () => {
-    const SHEET_URL = `https://docs.google.com/spreadsheets/d/1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y/gviz/tq?tqx=out:csv&sheet=soldaduraEditável&range=D2:D4`;
+    const SHEET_URL = `https://docs.google.com/spreadsheets/d/1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y/gviz/tq?tqx=out:csv&sheet=soldaduraEditável&range=D2:D5`;
 
     try {
         const response = await d3.text(SHEET_URL);
@@ -995,20 +995,22 @@ const updateInfoPanel = async () => {
     const bufferItems = await fetchBufferData();
     const currentLote = planningData.slots && planningData.slots.length > 0 ? planningData.slots[0].lote : ''; // Current LOTE from first slot
     
-    // Fetch slots to check for Slot_2_Em Curso
+    // Fetch slots to check for all active slots
     const slots = await fetchAllSlotsData();
-    let slot2Lote = null;
+    const slotLotes = [];
     
-    // If Slot 2 exists, fetch its LOTE from column B
-    if (slots.length >= 2) {
-        const slot2 = slots[1];
-        const SHEET_URL_SLOT2 = `https://docs.google.com/spreadsheets/d/${chartConfig.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${chartConfig.sheetName}&range=B${slot2.rowIndex}`;
+    // Fetch LOTE for each slot (up to 4)
+    for (let i = 0; i < Math.min(slots.length, 4); i++) {
+        const slot = slots[i];
+        const SHEET_URL_SLOT = `https://docs.google.com/spreadsheets/d/${chartConfig.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${chartConfig.sheetName}&range=B${slot.rowIndex}`;
         try {
-            const response = await d3.text(SHEET_URL_SLOT2);
-            slot2Lote = response.split('\n')[0]?.trim().replace(/"/g, '');
-            console.log(`📦 Slot 2 LOTE: ${slot2Lote}`);
+            const response = await d3.text(SHEET_URL_SLOT);
+            const lote = response.split('\n')[0]?.trim().replace(/"/g, '');
+            slotLotes.push(lote);
+            console.log(`📦 Slot ${i + 1} LOTE: ${lote}`);
         } catch (error) {
-            console.error('Error fetching Slot 2 LOTE:', error);
+            console.error(`Error fetching Slot ${i + 1} LOTE:`, error);
+            slotLotes.push(null);
         }
     }
     
@@ -1017,14 +1019,19 @@ const updateInfoPanel = async () => {
         if (bufferItems.length > 0) {
             infoPanelCard1.innerHTML = bufferItems
                 .map(item => {
-                    const isSlot1Active = item === currentLote;
-                    const isSlot2Active = slot2Lote && item === slot2Lote;
-                    
                     let className = 'buffer-item';
-                    if (isSlot1Active) {
-                        className += ' active';
-                    } else if (isSlot2Active) {
-                        className += ' active-slot2';
+                    
+                    // Check which slot matches this buffer item
+                    const slotIndex = slotLotes.findIndex(lote => lote && lote === item);
+                    
+                    if (slotIndex === 0) {
+                        className += ' active'; // Slot 1 - azul
+                    } else if (slotIndex === 1) {
+                        className += ' active-slot2'; // Slot 2 - cinza
+                    } else if (slotIndex === 2) {
+                        className += ' active-slot3'; // Slot 3 - amarelo
+                    } else if (slotIndex === 3) {
+                        className += ' active-slot4'; // Slot 4 - rosa
                     }
                     
                     return `<div class="${className}">${item}</div>`;
