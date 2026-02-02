@@ -1037,8 +1037,20 @@ const updateInfoPanel = async () => {
     
     // Update PLANEAMENTO card with planning data from PSMulti
     const infoPanelCard2 = document.querySelector('.info-panel-content-2');
+    const gridContainer = document.querySelector('.grid-container');
+    
     if (infoPanelCard2) {
         if (planningData.slots && planningData.slots.length > 0) {
+            // Remove classe multi-slot por padrão
+            infoPanelCard2.classList.remove('multi-slot');
+            
+            // Remove ou adiciona classe expanded-planeamento ao grid-container
+            if (planningData.slots.length > 3) {
+                gridContainer?.classList.add('expanded-planeamento');
+            } else {
+                gridContainer?.classList.remove('expanded-planeamento');
+            }
+            
             if (planningData.slots.length === 1) {
                 // Single slot - display in single column
                 const slotData = planningData.slots[0];
@@ -1050,7 +1062,12 @@ const updateInfoPanel = async () => {
                     </div>
                 `;
             } else {
-                // Multiple slots - display side by side
+                // Multiple slots - display in grid
+                // Adiciona classe multi-slot se houver mais de 3 slots (grid 2x2)
+                if (planningData.slots.length > 3) {
+                    infoPanelCard2.classList.add('multi-slot');
+                }
+                
                 const slotsHtml = planningData.slots.map(slotData => {
                     return `
                         <div class="slot-column">
@@ -1065,6 +1082,7 @@ const updateInfoPanel = async () => {
             }
         } else {
             infoPanelCard2.innerHTML = '<div class="info-line">No active slots</div>';
+            gridContainer?.classList.remove('expanded-planeamento');
         }
     }
     

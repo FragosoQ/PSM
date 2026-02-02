@@ -33,6 +33,16 @@
       grid-template-columns: repeat(2, 1fr);
       grid-template-rows: 1fr 1fr auto auto;
     }
+    
+    /* Ajuste quando houver mais de 3 slots - reduz altura dos cards superiores */
+    .grid-container.expanded-planeamento {
+      grid-template-rows: 0.8fr 0.8fr auto auto;
+    }
+    
+    /* Aumenta altura do card PLANEAMENTO quando expandido */
+    .grid-container.expanded-planeamento .info-panel-card-2 {
+      min-height: 200px;
+    }
 
     .destination-card {
       display: none !important;
@@ -124,38 +134,59 @@
     .info-panel-card-2 .info-panel-content-2 {
         align-items: flex-start !important;
         text-align: left;
-        padding-left: 10px !important;
+        padding: 10px !important;
         overflow: hidden;
         height: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        align-content: start;
+    }
+    
+    /* Grid 2x2 quando houver mais de 3 slots */
+    .info-panel-content-2.multi-slot {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+        gap: 6px;
+    }
+    
+    /* Quando há apenas 1 slot */
+    .info-panel-content-2:has(.slot-column:only-child) {
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
         justify-content: space-evenly;
-        gap: 10px;
+        padding-left: 10px !important;
     }
     
     .slot-column {
         display: flex;
         flex-direction: column;
-        justify-content: space-evenly;
-        flex: 1;
-        height: 100%;
-        position: relative;
+        gap: 4px;
+        padding: 6px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+        border-left: 3px solid rgba(255, 255, 255, 0.3);
+        min-height: fit-content;
     }
     
-    .slot-column:not(:last-child)::after {
-        content: '';
-        position: absolute;
-        right: -5px;
-        top: 10%;
-        bottom: 10%;
-        width: 1px;
-        background: linear-gradient(
-            to bottom,
-            rgba(255, 255, 255, 0) 0%,
-            rgba(255, 255, 255, 0.4) 20%,
-            rgba(255, 255, 255, 0.4) 80%,
-            rgba(255, 255, 255, 0) 100%
-        );
+    /* Remove estilo de background quando há apenas 1 slot */
+    .info-panel-content-2:has(.slot-column:only-child) .slot-column {
+        background: transparent;
+        border-left: none;
+        padding: 0;
+    }
+    
+    .slot-column .info-line {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        line-height: 1.2;
+        font-size: clamp(10px, 0.9vw, 13px);
+    }
+    
+    /* Texto ainda menor na grid 4x4 */
+    .info-panel-content-2.multi-slot .slot-column .info-line {
+        font-size: clamp(9px, 0.8vw, 11px);
     }
     
     .info-panel-card-3 .card-title {
@@ -291,6 +322,17 @@
           
           /* ALTERAÇÃO: Passa para 2 colunas para a imagem não ficar minúscula */
           grid-template-columns: repeat(2, 1fr); 
+      }
+      
+      /* Ajuste do card PLANEAMENTO no mobile */
+      .info-panel-card-2 .info-panel-content-2 {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 6px;
+      }
+      
+      /* Grid 2x2 no mobile quando houver 4+ slots */
+      .info-panel-content-2.multi-slot {
+          grid-template-columns: repeat(2, 1fr);
       }
       
       /* Ajuste do indicador no mobile para não ficar demasiado grosso */
